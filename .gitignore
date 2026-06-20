@@ -1,0 +1,6 @@
+node_modules/
+server/scanner-data.json
+server/universe-cache.json
+server/server.log
+server/server-err.log
+.env

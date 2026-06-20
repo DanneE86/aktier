@@ -1,0 +1,132 @@
+{
+  "prediction_date": "2026-06-19",
+  "target_date": "2026-06-23",
+  "target_day": "Monday",
+  "scanner_universe": 2245,
+  "created_by": "VD Aktieexpert + Market Scanner",
+
+  "high_conviction": [
+    {
+      "ticker": "BFLY",
+      "name": "Butterfly Network",
+      "price_at_prediction": 8.90,
+      "change_today": 56.7,
+      "entry_range": [8.20, 8.60],
+      "stop_loss": 7.40,
+      "target_1": 10.50,
+      "target_2": 13.00,
+      "catalyst": "Midjourney $74M avtal for full-body ultraljudsskanner med 40 Butterfly-moduler. NYSE toppresterare 2 dagar. Short interest 10%, 4.9 days-to-cover.",
+      "risk_score": 3,
+      "conviction": "HIGH"
+    },
+    {
+      "ticker": "QS",
+      "name": "QuantumScape",
+      "price_at_prediction": 8.04,
+      "change_today": 16.5,
+      "entry_range": [7.60, 8.00],
+      "stop_loss": 6.90,
+      "target_1": 9.50,
+      "target_2": 12.00,
+      "catalyst": "Honda solid-state-batteri-avtal. JB Straubel (Tesla-medgrundare) pa advisory board. EV-sektortrend.",
+      "risk_score": 2,
+      "conviction": "HIGH"
+    },
+    {
+      "ticker": "DOMO",
+      "name": "Domo Inc",
+      "price_at_prediction": 2.42,
+      "change_today": 21.0,
+      "entry_range": [2.20, 2.45],
+      "stop_loss": 1.85,
+      "target_1": 3.50,
+      "target_2": 8.00,
+      "catalyst": "Avancerade forhandlingar om buyout/strategisk transaktion. RPD Fund kopte 11.97% for $42.5M. P/S under 0.5x for SaaS-bolag. Buyout-besked kan komma nar som helst.",
+      "risk_score": 3,
+      "conviction": "HIGH"
+    },
+    {
+      "ticker": "HYPR",
+      "name": "Hyperfine",
+      "price_at_prediction": 1.60,
+      "change_today": 15.1,
+      "entry_range": [1.50, 1.60],
+      "stop_loss": 1.30,
+      "target_1": 2.00,
+      "target_2": 2.50,
+      "catalyst": "Russell 2000/3000-inklusion effektiv 26-27 juni. Indexfonder maste kopa. 6.4x snittvolym tyder pa att ackumuleringen borjat. FDA-godkand portabel MRI.",
+      "risk_score": 3,
+      "conviction": "HIGH"
+    }
+  ],
+
+  "speculative": [
+    {
+      "ticker": "CRVO",
+      "name": "CervoMed",
+      "price_at_prediction": 4.24,
+      "change_today": 11.3,
+      "entry_range": [3.80, 4.30],
+      "stop_loss": 3.30,
+      "target_1": 6.00,
+      "target_2": 7.50,
+      "catalyst": "Vertex Pharmaceuticals-grundare koper 955K aktier for $3M. FDA-alignment pa Phase 3 for neflamapimod. $10.5M placement sakrar cash till Q2 2027.",
+      "risk_score": 3,
+      "conviction": "SPECULATIVE"
+    },
+    {
+      "ticker": "SLDB",
+      "name": "Solid Biosciences",
+      "price_at_prediction": 8.33,
+      "change_today": 14.0,
+      "entry_range": [8.33, 8.90],
+      "stop_loss": 7.50,
+      "target_1": 10.50,
+      "target_2": 12.00,
+      "catalyst": "Nara 52v-high $8.87, breakout-trade. Phase 3 IMPACT DUCHENNE doserad. H.C. Wainwright PT $25. 8.1x snittvolym.",
+      "risk_score": 2,
+      "conviction": "SPECULATIVE"
+    },
+    {
+      "ticker": "APWC",
+      "name": "Asia Pacific Wire & Cable",
+      "price_at_prediction": 1.99,
+      "change_today": 43.2,
+      "entry_range": [1.80, 2.00],
+      "stop_loss": 1.55,
+      "target_1": 2.80,
+      "target_2": 3.50,
+      "catalyst": "Extremt undervarderad: $489.7M revenue vs $35M market cap (0.07x P/S). Bokfort varde $8.26/aktie. $33M cash. 62x snittvolym.",
+      "risk_score": 4,
+      "conviction": "SPECULATIVE"
+    },
+    {
+      "ticker": "JBLU",
+      "name": "JetBlue Airways",
+      "price_at_prediction": 5.68,
+      "change_today": 10.7,
+      "entry_range": [5.40, 5.65],
+      "stop_loss": 4.90,
+      "target_1": 6.50,
+      "target_2": 7.00,
+      "catalyst": "Hojd Q2-intaktsguidance (RASM +9-12% YoY). 99.8% completion factor. Spirit-rutter expansion. Turnaround-story.",
+      "risk_score": 2,
+      "conviction": "SPECULATIVE"
+    }
+  ],
+
+  "avoid": [
+    { "ticker": "CAST", "reason": "Negativ equity, $0.63M omsattning, +205% pa en vecka, pump-risk" },
+    { "ticker": "CDT", "reason": "Nasdaq compliance deadline, vapour-vardering" },
+    { "ticker": "KALA", "reason": "PUMP-VARNING" },
+    { "ticker": "ATPC", "reason": "Low-float pump, $274K kvartalsintakter" },
+    { "ticker": "LNKS", "reason": "Smatt forvarv ($2.35M), redan +67.5%, pullback-risk" }
+  ],
+
+  "verification": {
+    "check_date": "2026-06-23",
+    "check_time": "16:00 ET (market close)",
+    "success_criteria": "Target 1 natt = framgang. Stop-loss traffad = misslyckad.",
+    "notes": "Fredag 20 juni ar handelsdag - uppdatera prediktioner baserat pa fredagens prisaction"
+  }
+}

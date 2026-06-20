@@ -1,0 +1,582 @@
+/* ================================================================
+   STOCKS-STYLE.CSS -- Aktieanalyssidans egna stilar
+   Importeras EFTER style.css (bas-tema)
+   ================================================================ */
+
+/* Navigation styles are in the shared style.css */
+
+/* -- API Status ------------------------------------------------- */
+
+.api-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* -- Flikar: Tidshorisont --------------------------------------- */
+
+.stock-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  border: 1px solid #2b3252;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.stock-tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: #8b91ab;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-family: inherit;
+}
+
+.stock-tab:not(:last-child) {
+  border-right: 1px solid #2b3252;
+}
+
+.stock-tab:hover {
+  background: rgba(109, 213, 237, 0.08);
+  color: #c7cdf0;
+}
+
+.stock-tab-active {
+  background: rgba(109, 213, 237, 0.15);
+  color: #6dd5ed;
+}
+
+/* -- Filter ----------------------------------------------------- */
+
+.stock-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0;
+  border: 1px solid #2b3252;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.filter-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: #8b91ab;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-family: inherit;
+}
+
+.filter-btn:not(:last-child) {
+  border-right: 1px solid #2b3252;
+}
+
+.filter-btn:hover {
+  background: rgba(138, 156, 255, 0.08);
+  color: #c7cdf0;
+}
+
+.filter-btn-active {
+  background: rgba(138, 156, 255, 0.15);
+  color: #8a9cff;
+}
+
+/* -- Aktiekort -------------------------------------------------- */
+
+.stock-card {
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.stock-card:hover {
+  border-color: #8a9cff;
+  box-shadow: 0 6px 24px rgba(138, 156, 255, 0.15);
+}
+
+.stock-card-buy {
+  border-left: 3px solid #2ecc71;
+}
+
+.stock-card-sell {
+  border-left: 3px solid #e74c3c;
+}
+
+.stock-card-hold {
+  border-left: 3px solid #f1c40f;
+}
+
+.stock-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.stock-card-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stock-card-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e7e9f0;
+}
+
+.stock-card-ticker {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #8a9cff;
+  background: rgba(138, 156, 255, 0.12);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.stock-card-market-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stock-market-se {
+  background: rgba(109, 213, 237, 0.12);
+  color: #6dd5ed;
+  border: 1px solid #6dd5ed;
+}
+
+.stock-market-us {
+  background: rgba(138, 156, 255, 0.12);
+  color: #8a9cff;
+  border: 1px solid #8a9cff;
+}
+
+.stock-card-price-col {
+  text-align: right;
+}
+
+.stock-card-price {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #e7e9f0;
+}
+
+.stock-card-change {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Signal-rad */
+.stock-card-signal-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.stock-card-sector {
+  font-size: 0.78rem;
+  color: #9aa0b4;
+}
+
+.stock-card-horizon {
+  font-size: 0.72rem;
+  color: #8b91ab;
+  font-style: italic;
+}
+
+.stock-card-risk {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.risk-very-low {
+  background: rgba(46, 204, 113, 0.12);
+  color: #4ce081;
+  border: 1px solid #2ecc71;
+}
+
+.risk-low {
+  background: rgba(46, 204, 113, 0.12);
+  color: #4ce081;
+  border: 1px solid #2ecc71;
+}
+
+.risk-medium {
+  background: rgba(241, 196, 15, 0.12);
+  color: #f4d35e;
+  border: 1px solid #f1c40f;
+}
+
+.risk-high {
+  background: rgba(231, 76, 60, 0.12);
+  color: #ff6f61;
+  border: 1px solid #e74c3c;
+}
+
+/* Risk-dots */
+.risk-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.risk-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2b3252;
+  border: 1px solid #3b4470;
+}
+
+.risk-dot-filled {
+  background: #ff6f61;
+  border-color: #e74c3c;
+}
+
+.risk-dot-filled-low {
+  background: #4ce081;
+  border-color: #2ecc71;
+}
+
+.risk-dot-filled-medium {
+  background: #f4d35e;
+  border-color: #f1c40f;
+}
+
+/* Motivering */
+.stock-card-motivation {
+  font-size: 0.85rem;
+  color: #9aa0b4;
+  line-height: 1.5;
+  margin: 0 0 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.stock-card-motivation.expanded {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.stock-card-show-more {
+  background: none;
+  border: none;
+  color: #8a9cff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 10px;
+  font-family: inherit;
+}
+
+.stock-card-show-more:hover {
+  text-decoration: underline;
+}
+
+/* Mini-indikatorer */
+.stock-card-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.stock-mini-indicator {
+  min-width: 60px;
+}
+
+.stock-mini-value {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #c7cdf0;
+}
+
+/* Utdelning */
+.stock-card-dividend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(46, 204, 113, 0.08);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.stock-dividend-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(46, 204, 113, 0.15);
+  color: #4ce081;
+  border: 1px solid #2ecc71;
+}
+
+.stock-dividend-value {
+  font-weight: 700;
+  color: #4ce081;
+}
+
+/* Detail-knapp */
+.stock-card-detail-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #2b3252;
+  background: #151929;
+  color: #8a9cff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  font-family: inherit;
+}
+
+.stock-card-detail-btn:hover {
+  background: rgba(138, 156, 255, 0.12);
+  border-color: #8a9cff;
+}
+
+/* -- Detaljvy (overlay) ----------------------------------------- */
+
+.stock-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 19, 32, 0.92);
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.stock-detail-container {
+  max-width: 860px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.detail-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #2b3252;
+  background: #151929;
+  color: #ff6f61;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+  z-index: 10;
+}
+
+.detail-close-btn:hover {
+  background: rgba(231, 76, 60, 0.15);
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-right: 80px;
+}
+
+.detail-ticker {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #8a9cff;
+  margin-right: 8px;
+}
+
+.detail-market-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+.detail-sector {
+  font-size: 0.82rem;
+  color: #9aa0b4;
+}
+
+.detail-price-block {
+  text-align: right;
+}
+
+.detail-signal-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.detail-signal-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.detail-motivation-card {
+  background: #151929;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 16px;
+  border: 1px solid #2b3252;
+}
+
+.detail-motivation-card p {
+  color: #c7cdf0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+
+.detail-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.detail-chart-section,
+.detail-ta-section,
+.detail-levels-section,
+.detail-fundamental-section,
+.detail-news-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #2b3252;
+}
+
+.detail-ta-summary {
+  margin-top: 16px;
+}
+
+/* -- No-API info box -------------------------------------------- */
+
+.no-api-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(241, 196, 15, 0.1);
+  border: 1px solid #f1c40f;
+  color: #f4d35e;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+/* -- Responsiv -------------------------------------------------- */
+
+@media (max-width: 600px) {
+  .stock-card-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .stock-card-price-col {
+    text-align: left;
+  }
+
+  .detail-header {
+    flex-direction: column;
+    padding-right: 50px;
+  }
+
+  .detail-price-block {
+    text-align: left;
+  }
+
+  .stock-filters {
+    flex-direction: column;
+  }
+
+  .nav-link {
+    font-size: 0.82rem;
+    padding: 10px 8px;
+  }
+
+  .stock-card-indicators {
+    gap: 10px;
+  }
+
+  .detail-targets {
+    gap: 12px;
+  }
+}
+
+/* -- Scanner status --------------------------------------------- */
+
+.scanner-status-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.scanner-status-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#scanner-run-btn {
+  margin-left: auto;
+}
+
+/* -- Loading pulse animation (Yahoo Finance) -------------------- */
+
+.loading-pulse {
+  animation: loadingPulse 1.2s ease-in-out infinite;
+  color: #8b91ab !important;
+  font-size: 0.8rem !important;
+}
+
+@keyframes loadingPulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}

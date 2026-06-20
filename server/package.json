@@ -1,0 +1,16 @@
+{
+  "name": "stock-scanner-backend",
+  "version": "1.0.0",
+  "description": "Backend for dynamic stock scanning - stocks under $10",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "scan": "node scanner.js --run-once",
+    "float-scan": "node float-scanner.js --run-once"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "node-cron": "^3.0.3"
+  }
+}

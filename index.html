@@ -1,0 +1,486 @@
+
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ethereum – Pris & Köp/Sälj-signaler</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Navigation -->
+    <nav class="nav-bar">
+      <a href="index.html" class="nav-link nav-link-active">
+        <span class="nav-icon">&Xi;</span> ETH Tracker
+      </a>
+      <a href="stocks.html" class="nav-link">
+        <span class="nav-icon">$</span> Aktieanalys
+      </a>
+    </nav>
+
+    <header>
+      <h1>Ξ Ethereum Tracker</h1>
+      <p class="subtitle">Live-pris, trend och enkla köp/sälj-signaler baserade på teknisk analys</p>
+    </header>
+
+    <section id="price-card" class="card">
+      <div class="price-main">
+        <span class="label">Pris (USD) · CoinGecko</span>
+        <span id="price-usd" class="price">–</span>
+      </div>
+      <div class="price-secondary">
+        <div>
+          <span class="label">Pris (SEK)</span>
+          <span id="price-sek" class="price-small">–</span>
+        </div>
+        <div>
+          <span class="label">Förändring 24h</span>
+          <span id="change-24h" class="price-small">–</span>
+        </div>
+        <div>
+          <span class="label">Binance (jämförelse)</span>
+          <span id="price-binance" class="price-small">–</span>
+        </div>
+        <div>
+          <span class="label">Senast uppdaterad</span>
+          <span id="last-updated" class="price-small">–</span>
+        </div>
+      </div>
+      <p class="auto-refresh">
+        🔄 Auto-uppdaterar varje minut · nästa uppdatering om <span id="countdown">60</span> s
+      </p>
+    </section>
+
+    <section id="market-card" class="card">
+      <h2>Marknadsinformation</h2>
+      <div class="indicators">
+        <div class="indicator">
+          <span class="label">Marknadsvärde</span>
+          <span id="market-cap" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Volym 24h</span>
+          <span id="volume-24h" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Förändring 7 dagar</span>
+          <span id="change-7d" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Förändring 30 dagar</span>
+          <span id="change-30d" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">All Time High</span>
+          <span id="ath-price" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Avstånd från ATH</span>
+          <span id="ath-distance" class="value">–</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="sentiment-card" class="card">
+      <h2>Marknadssentiment</h2>
+      <div class="sentiment-row">
+        <div id="sentiment-gauge" class="sentiment-gauge sentiment-loading">–</div>
+        <div class="sentiment-text">
+          <span id="sentiment-label" class="sentiment-label">Laddar…</span>
+          <p id="sentiment-desc" class="sentiment-desc">
+            Hämtar Crypto Fear &amp; Greed Index – ett sammanvägt mått (0–100) på hela
+            kryptomarknadens känsloläge baserat på volatilitet, volym, sociala medier,
+            dominans och trender.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="defi-card" class="card">
+      <h2>DeFi & Staking</h2>
+      <div class="defi-tvl-row">
+        <div>
+          <span class="label">Ethereums TVL (Total Value Locked)</span>
+          <span id="defi-tvl" class="price-small">–</span>
+        </div>
+        <div>
+          <span class="label">TVL-förändring 1 dag</span>
+          <span id="defi-tvl-change" class="price-small">–</span>
+        </div>
+      </div>
+      <h3 class="ta-subtitle" style="margin-top:16px">Top 5 Staking-protokoll (APY)</h3>
+      <ul id="staking-list" class="staking-list">
+        <li class="staking-loading">Laddar staking-data…</li>
+      </ul>
+    </section>
+
+    <section id="gas-card" class="card">
+      <h2>Gas Tracker</h2>
+      <div class="gas-status-row">
+        <span class="label">Nätverksbelastning</span>
+        <span id="gas-load" class="gas-load gas-load-unknown">Laddar…</span>
+      </div>
+      <div class="gas-prices-row">
+        <div class="gas-tier">
+          <span class="label">Low</span>
+          <span id="gas-low" class="gas-value">–</span>
+          <span class="gas-unit">Gwei</span>
+        </div>
+        <div class="gas-tier">
+          <span class="label">Average</span>
+          <span id="gas-avg" class="gas-value">–</span>
+          <span class="gas-unit">Gwei</span>
+        </div>
+        <div class="gas-tier">
+          <span class="label">High</span>
+          <span id="gas-high" class="gas-value">–</span>
+          <span class="gas-unit">Gwei</span>
+        </div>
+      </div>
+      <div class="gas-cost-row">
+        <span class="label">Estimerad kostnad för ETH-överföring (21 000 gas)</span>
+        <span id="gas-transfer-cost" class="price-small">–</span>
+      </div>
+    </section>
+
+    <section id="correlation-card" class="card">
+      <h2>ETH vs Marknaden</h2>
+      <div class="corr-ratio-row">
+        <div>
+          <span class="label">ETH/BTC-ratio</span>
+          <span id="ethbtc-ratio" class="price-small">–</span>
+        </div>
+        <div>
+          <span class="label">ETH/BTC 24h</span>
+          <span id="ethbtc-change" class="price-small">–</span>
+        </div>
+        <div>
+          <span class="label">BTC-pris (referens)</span>
+          <span id="btc-price" class="price-small">–</span>
+        </div>
+      </div>
+      <h3 class="ta-subtitle" style="margin-top:16px">Marknadsdominans</h3>
+      <div class="dominance-bar-container">
+        <div class="dominance-bar">
+          <div id="dom-btc" class="dom-segment dom-btc" style="width:0%"></div>
+          <div id="dom-eth" class="dom-segment dom-eth" style="width:0%"></div>
+          <div id="dom-other" class="dom-segment dom-other" style="width:0%"></div>
+        </div>
+        <div class="dominance-legend">
+          <span class="dom-legend-item"><span class="dom-dot dom-dot-btc"></span> BTC <span id="dom-btc-pct">–</span></span>
+          <span class="dom-legend-item"><span class="dom-dot dom-dot-eth"></span> ETH <span id="dom-eth-pct">–</span></span>
+          <span class="dom-legend-item"><span class="dom-dot dom-dot-other"></span> Övriga <span id="dom-other-pct">–</span></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="alarm-card" class="card">
+      <h2>Prisalarm & Notifikationer</h2>
+      <div class="alarm-form-row">
+        <div class="alarm-field">
+          <span class="label">Prisgräns (USD)</span>
+          <input type="number" id="alarm-price-input" class="alarm-input" placeholder="t.ex. 4000" step="1" min="0">
+        </div>
+        <div class="alarm-field">
+          <span class="label">Riktning</span>
+          <select id="alarm-direction" class="alarm-select">
+            <option value="above">Över (pris stiger till)</option>
+            <option value="below">Under (pris faller till)</option>
+          </select>
+        </div>
+        <button id="alarm-add-btn" class="alarm-btn">Lägg till alarm</button>
+      </div>
+      <div class="alarm-quick-row">
+        <span class="label" style="width:100%">Snabbknappar</span>
+        <button id="alarm-rsi-low" class="alarm-quick-btn">RSI &lt; 30 (översåld)</button>
+        <button id="alarm-rsi-high" class="alarm-quick-btn">RSI &gt; 70 (överköpt)</button>
+      </div>
+      <h3 class="ta-subtitle" style="margin-top:16px">Aktiva alarm <span id="alarm-count" class="alarm-count-badge">0/10</span></h3>
+      <ul id="alarm-list" class="alarm-list">
+        <li class="alarm-empty">Inga aktiva alarm</li>
+      </ul>
+      <div id="alarm-triggered" class="alarm-triggered" style="display:none">
+        <span class="alarm-triggered-icon">&#x1F514;</span>
+        <span id="alarm-triggered-text">Alarm triggat!</span>
+      </div>
+    </section>
+
+    <section class="card" id="sources-card">
+      <h2>Datakällor &amp; signalbidrag</h2>
+      <table class="sources-table">
+        <thead>
+          <tr>
+            <th>Källa</th>
+            <th>Mäter</th>
+            <th>Indikator</th>
+            <th>Signal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="https://www.coingecko.com/" target="_blank" rel="noopener">CoinGecko</a></td>
+            <td>Pris USD/SEK, marknadsdata, 365d historik</td>
+            <td>SMA, EMA, RSI, Bollinger, MA50/200</td>
+            <td><span id="src-coingecko" class="src-badge src-neutral">Laddar…</span></td>
+          </tr>
+          <tr>
+            <td><a href="https://www.coingecko.com/" target="_blank" rel="noopener">CoinGecko Global</a></td>
+            <td>ETH/BTC-ratio, marknadsdominans</td>
+            <td>BTC/ETH/Övriga dominans %</td>
+            <td><span id="src-coingecko-global" class="src-badge src-neutral">Laddar…</span></td>
+          </tr>
+          <tr>
+            <td><a href="https://www.binance.com/" target="_blank" rel="noopener">Binance</a></td>
+            <td>Oberoende prisjämförelse (spot)</td>
+            <td>Prisskillnad vs CoinGecko</td>
+            <td><span id="src-binance" class="src-badge src-neutral">Laddar…</span></td>
+          </tr>
+          <tr>
+            <td><a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener">alternative.me</a></td>
+            <td>Kryptomarknadens känsloläge (0–100)</td>
+            <td>Fear &amp; Greed Index</td>
+            <td><span id="src-sentiment" class="src-badge src-neutral">Laddar…</span></td>
+          </tr>
+          <tr>
+            <td><a href="https://defillama.com/" target="_blank" rel="noopener">DefiLlama</a></td>
+            <td>TVL per kedja, staking-yields</td>
+            <td>TVL, Top staking APY</td>
+            <td><span id="src-defillama" class="src-badge src-neutral">Laddar…</span></td>
+          </tr>
+          <tr>
+            <td><a href="https://owlracle.info/" target="_blank" rel="noopener">Owlracle</a></td>
+            <td>Ethereum gas-priser (Gwei)</td>
+            <td>Low / Avg / High gas</td>
+            <td><span id="src-owlracle" class="src-badge src-neutral">Laddar…</span></td>
+          </tr>
+          <tr>
+            <td><a href="https://www.cryptocompare.com/" target="_blank" rel="noopener">CryptoCompare</a></td>
+            <td>Senaste ETH-nyheter</td>
+            <td>Nyhetsflöde (5 senaste)</td>
+            <td><span id="src-cryptocompare" class="src-badge src-neutral">Laddar…</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 class="ta-subtitle" style="margin-top:18px">Signalbidrag per indikator</h3>
+      <div id="signal-scorecard" class="signal-scorecard"></div>
+    </section>
+
+    <section id="signal-card" class="card">
+      <h2>Köp/Sälj-signal</h2>
+      <div id="signal-badge" class="signal-badge signal-loading">Laddar analys…</div>
+      <ul id="signal-reasons" class="signal-reasons"></ul>
+      <p class="disclaimer">
+        ⚠️ Detta är <strong>inte finansiell rådgivning</strong>. Signalerna bygger på enkla,
+        historiska tekniska indikatorer (glidande medelvärden, RSI och marknadssentiment) och
+        kan inte förutsäga framtiden. Kryptovalutor är extremt volatila – investera bara pengar
+        du har råd att förlora och gör alltid din egen research (DYOR).
+      </p>
+    </section>
+
+    <section id="forecast-card" class="card">
+      <h2>Prisprognos <span class="ta-badge">TA</span></h2>
+      <div class="forecast-tabs">
+        <button class="forecast-tab forecast-tab-active" data-horizon="7">1 vecka</button>
+        <button class="forecast-tab" data-horizon="30">1 månad</button>
+        <button class="forecast-tab" data-horizon="365">1 år</button>
+        <button class="forecast-tab" data-horizon="730">2 år</button>
+      </div>
+      <div id="forecast-content" class="forecast-content">
+        <div class="forecast-loading">Beräknar prognoser...</div>
+      </div>
+    </section>
+
+    <section class="card" id="breakout-card">
+      <h2>Utbrottsanalys  <span class="ta-badge">TA</span></h2>
+
+      <div class="breakout-header">
+        <div id="breakout-badge" class="breakout-badge breakout-none">Analyserar…</div>
+        <p id="breakout-desc" class="breakout-desc"></p>
+      </div>
+
+      <div class="ta-grid">
+        <div class="ta-col">
+          <h3 class="ta-subtitle resist-color">Motstånd (Resistance)</h3>
+          <ul id="resistance-list" class="levels-list"></ul>
+        </div>
+        <div class="ta-col">
+          <h3 class="ta-subtitle support-color">Stöd (Support)</h3>
+          <ul id="support-list" class="levels-list"></ul>
+        </div>
+      </div>
+
+      <div class="ta-section">
+        <h3 class="ta-subtitle">Handelsstrategi</h3>
+        <div class="indicators">
+          <div class="indicator">
+            <span class="label">Instegsläge</span>
+            <span id="entry-price" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Stopp-loss</span>
+            <span id="stop-loss" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Vinstmål</span>
+            <span id="take-profit" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Risk / Reward</span>
+            <span id="risk-reward" class="value">–</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ta-section">
+        <h3 class="ta-subtitle">Trendbekräftelse</h3>
+        <div class="indicators">
+          <div class="indicator">
+            <span class="label">MA50 (50 dagar)</span>
+            <span id="ma50" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">MA200 (200 dagar)</span>
+            <span id="ma200" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Volymbekräftelse</span>
+            <span id="vol-confirm" class="value">–</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="disclaimer">
+        ⚠️ Motstånd- och stödnivåer identifieras automatiskt från 365 dagars historik och är <strong>inte</strong> finansiell rådgivning. Gör alltid din egen analys (DYOR).
+      </p>
+    </section>
+
+    <section id="roadmap-card" class="card">
+      <h2>Ethereum Roadmap &amp; Nyheter</h2>
+      <div class="roadmap-container">
+        <h3 class="ta-subtitle">Uppgraderingstidslinje</h3>
+        <div class="roadmap-timeline">
+          <div class="timeline-line"></div>
+
+          <div class="timeline-item timeline-done">
+            <div class="timeline-dot timeline-dot-done"></div>
+            <div class="timeline-content">
+              <span class="timeline-date">Maj 2025</span>
+              <span class="timeline-name">Pectra</span>
+              <span class="timeline-status timeline-status-done">Genomförd</span>
+              <p class="timeline-desc">EIP-7702 account abstraction, validator-ändringar</p>
+            </div>
+          </div>
+
+          <div class="timeline-item timeline-done">
+            <div class="timeline-dot timeline-dot-done"></div>
+            <div class="timeline-content">
+              <span class="timeline-date">Jun 2025</span>
+              <span class="timeline-name">Fusaka</span>
+              <span class="timeline-status timeline-status-done">Genomförd</span>
+              <p class="timeline-desc">PeerDAS, blob-skalning</p>
+            </div>
+          </div>
+
+          <div class="timeline-item timeline-upcoming">
+            <div class="timeline-dot timeline-dot-upcoming"></div>
+            <div class="timeline-content">
+              <span class="timeline-date">Q3 2026</span>
+              <span class="timeline-name">Glamsterdam</span>
+              <span class="timeline-status timeline-status-upcoming">Kommande</span>
+              <p class="timeline-desc">ePBS, parallell exekvering, ~78% lägre gas</p>
+            </div>
+          </div>
+
+          <div class="timeline-item timeline-planned">
+            <div class="timeline-dot timeline-dot-planned"></div>
+            <div class="timeline-content">
+              <span class="timeline-date">H2 2026</span>
+              <span class="timeline-name">Hegota</span>
+              <span class="timeline-status timeline-status-planned">Planerad</span>
+              <p class="timeline-desc">Verkle Trees, stateless clients</p>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="ta-subtitle" style="margin-top:20px">Senaste ETH-nyheter</h3>
+        <ul id="news-list" class="news-list">
+          <li class="news-loading">Laddar nyheter...</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Prisutveckling (1 år)  <span class="ta-badge" style="font-size:0.7rem">MA50 + MA200</span></h2>
+      <canvas id="priceChart" height="100"></canvas>
+    </section>
+
+    <section class="card">
+      <h2>Indikatorer</h2>
+      <div class="indicators" id="indicators">
+        <div class="indicator">
+          <span class="label">SMA 7 dagar</span>
+          <span id="sma7" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">SMA 25 dagar</span>
+          <span id="sma25" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">RSI (14)</span>
+          <span id="rsi" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">EMA 12 dagar</span>
+          <span id="ema12" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">EMA 26 dagar</span>
+          <span id="ema26" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">MACD (EMA12 − EMA26)</span>
+          <span id="macd-val" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Bollinger Övre (20d)</span>
+          <span id="bb-upper" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Bollinger Mitten (20d)</span>
+          <span id="bb-mid" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Bollinger Nedre (20d)</span>
+          <span id="bb-lower" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Volymtrend</span>
+          <span id="volume-trend" class="value">–</span>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        Källor:
+        <a href="https://www.coingecko.com/" target="_blank" rel="noopener">CoinGecko</a> (huvudpris, historik &amp; marknadsdominans),
+        <a href="https://www.binance.com/" target="_blank" rel="noopener">Binance</a> (oberoende prisjämförelse),
+        <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener">Crypto Fear &amp; Greed Index</a>
+        (marknadssentiment),
+        <a href="https://defillama.com/" target="_blank" rel="noopener">DefiLlama</a> (TVL &amp; staking-yields),
+        <a href="https://owlracle.info/" target="_blank" rel="noopener">Owlracle</a>
+        (gas-priser) och
+        <a href="https://www.cryptocompare.com/" target="_blank" rel="noopener">CryptoCompare</a>
+        (nyheter) – alla gratis, allmänt erkända och nyckelfria API:er.
+      </p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
