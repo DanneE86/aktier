@@ -12,7 +12,7 @@
 // Byt ut "demo" mot din riktiga nyckel. Sa lange vardet ar "demo"
 // visas aktielistan med hardkodad data men utan live-kurser.
 const API_KEYS = {
-  twelveData:   "88ccfc3a414c4f16b4e1ab32dfddf5b2",
+  twelveData:   "demo",
   finnhub:      "demo",
   alphaVantage: "demo"
 };
@@ -53,7 +53,7 @@ const SHORT_TERM_PICKS = [
     timeHorizon: "2-4 veckor",
     motivation: "Konsensus Strong Buy fran 38 analytiker. Genomsnittlig riktkurs $306 mot kurs $210 ger 45% uppsida. " +
                 "AI-infrastrukturboom driver fortsatt tillvaxt. P/E 31 ar historiskt lagt for NVDA.",
-    targetPrice: 250,
+    targetPrice: 306,
     stopLossPercent: 8,
     riskLevel: "MEDEL",
     riskScore: 3
@@ -132,6 +132,54 @@ const SHORT_TERM_PICKS = [
                 "Aktien under $10 -- spekulativ men med stor potential om FAA-certifiering gar i las.",
     targetPrice: 10.61,
     stopLossPercent: 15,
+    riskLevel: "MYCKET HOG",
+    riskScore: 5
+  },
+  {
+    name: "Spero Therapeutics",
+    ticker: "SPRO",
+    tickerDisplay: "SPRO",
+    market: "US",
+    sector: "Biotech / Pharma",
+    recommendation: "KOP",
+    timeHorizon: "1-4 veckor",
+    motivation: "FDA godkande Utebzi (tebipenem) 18 juni -- forsta orala karbapenem nagonsin. " +
+                "Partnerskap med GSK for kommersialisering. Cash till 2028. " +
+                "Unik produkt utan direkt konkurrent i sin klass. Kommersiell lansering vantas H2 2026.",
+    targetPrice: 5.00,
+    stopLossPercent: 20,
+    riskLevel: "HOG",
+    riskScore: 4
+  },
+  {
+    name: "Tuya Inc",
+    ticker: "TUYA",
+    tickerDisplay: "TUYA",
+    market: "US",
+    sector: "Teknologi / IoT",
+    recommendation: "KOP",
+    timeHorizon: "2-8 veckor",
+    motivation: "Lonsamt Q1 2026 (nettovinst $15.8M). Vinsttillvaxt +117%/ar senaste 3 aren " +
+                "medan aktien bara stigit 7%/ar -- stor diskrepans. Analytikerkonsensus Strong Buy, " +
+                "snittriktkurs $3.42 mot kurs ~$2.01 ger ~70% uppsida. IoT-plattform med global rackvidd.",
+    targetPrice: 3.42,
+    stopLossPercent: 15,
+    riskLevel: "HOG",
+    riskScore: 4
+  },
+  {
+    name: "Opendoor Technologies",
+    ticker: "OPEN",
+    tickerDisplay: "OPEN",
+    market: "US",
+    sector: "Teknologi / Fastighet",
+    recommendation: "KOP",
+    timeHorizon: "1-2 veckor",
+    motivation: "Russell 3000-inkludering 26 juni driver passivt indexkop. Aktien studsade +9% pa nyheten. " +
+                "Diskuteras aktivt pa WallStreetBets. VARNING: WSB-sentimentet borjar svalna -- " +
+                "risk for 'sell the news' efter 26 juni. Kortsiktig trade, inte langsiktigt innehav.",
+    targetPrice: 5.50,
+    stopLossPercent: 12,
     riskLevel: "HOG",
     riskScore: 4
   },
@@ -141,13 +189,15 @@ const SHORT_TERM_PICKS = [
     tickerDisplay: "GRAB",
     market: "US",
     sector: "Teknologi / Superapp",
-    recommendation: "KOP",
+    recommendation: "BEHALL",
     timeHorizon: "1-4 veckor",
-    motivation: "27 Buy-ratings, 0 Sell. Snittriktkurs $5.97 mot kurs ~$3.57 ger ~67% uppsida. " +
+    motivation: "27 Buy-ratings, 0 Sell. Snittriktkurs $5.97 mot kurs ~$3.54 ger ~69% uppsida. " +
                 "Sydostasiens ledande superapp (ridesharing, mat, finans). Forsta helarsvinsten 2025 ($268M). " +
-                "Intakter $3.55 Md, guidning FY26 $4.04-4.10 Md. Stark tillvaxt +23.5% QoQ.",
+                "VARNING: VD och institutionella investerare SALJER -- Form 4-filings visar konsekvent " +
+                "insiderforsaljning juni 2026. Insiderforsaljning ar en stark varningssignal. " +
+                "Avvakta tills insiderforsaljningen avtar.",
     targetPrice: 5.97,
-    stopLossPercent: 12,
+    stopLossPercent: 15,
     riskLevel: "HOG",
     riskScore: 4
   },
@@ -255,7 +305,7 @@ const LONG_TERM_PICKS = [
     targetPrice: null,
     stopLossPercent: null,
     riskLevel: "MYCKET LAG",
-    riskScore: 1,
+    riskScore: 0,
     isDividendStock: true,
     dividendYield: "2.7%"
   },
@@ -264,7 +314,7 @@ const LONG_TERM_PICKS = [
     ticker: "JNJ",
     tickerDisplay: "JNJ",
     market: "US",
-    sector: "Halsoyard / Pharma",
+    sector: "Hälsovård / Pharma",
     recommendation: "KOP",
     timeHorizon: "5+ ar",
     motivation: "Dividend King -- 64 ar i rad med hojd utdelning. Senaste hojning april 2026: +3,1% till $1,34/kvartal. " +
@@ -273,7 +323,7 @@ const LONG_TERM_PICKS = [
     targetPrice: null,
     stopLossPercent: null,
     riskLevel: "MYCKET LAG",
-    riskScore: 1,
+    riskScore: 0,
     isDividendStock: true,
     dividendYield: "2.2%"
   },
@@ -311,7 +361,9 @@ let scannerHits    = [];
 let scannerTier    = "all";
 let scannerType    = "all";
 let rocketData     = null;
+let yesterdayRocketData = null;
 let rocketHistory  = [];
+let tabRequestId   = 0;
 
 // ── Rate limiter (Twelve Data: max 8 req/min) ─────────────────────
 
@@ -347,6 +399,32 @@ function getCached(key) {
 
 function setCache(key, data) {
   apiCache.set(key, { data: data, ts: Date.now() });
+}
+
+function pruneCache() {
+  var now = Date.now();
+  for (var entry of apiCache) {
+    if (now - entry[1].ts > CACHE_TTL) apiCache.delete(entry[0]);
+  }
+}
+
+// ── Visuell felhantering ──────────────────────────────────────────
+
+function showErrorToast(message) {
+  var existing = document.getElementById("error-toast");
+  if (existing) existing.remove();
+
+  var toast = document.createElement("div");
+  toast.id = "error-toast";
+  toast.setAttribute("role", "alert");
+  toast.style.cssText = "position:fixed;bottom:20px;right:20px;z-index:9999;padding:12px 20px;" +
+    "border-radius:10px;background:rgba(231,76,60,0.95);color:#fff;font-size:0.88rem;" +
+    "font-weight:600;max-width:380px;box-shadow:0 4px 20px rgba(0,0,0,0.4);" +
+    "animation:fadeInUp 0.3s ease;cursor:pointer";
+  toast.textContent = message;
+  toast.addEventListener("click", function() { toast.remove(); });
+  document.body.appendChild(toast);
+  setTimeout(function() { if (toast.parentNode) toast.remove(); }, 8000);
 }
 
 // ── Formateringsfunktioner ────────────────────────────────────────
@@ -631,6 +709,7 @@ async function loadAllQuotes() {
     updateApiStatus("yahoo-ok");
   } else if (failed > 0 && loaded === 0) {
     updateApiStatus("yahoo-error");
+    showErrorToast("Kunde inte hämta kurser. Kontrollera din internetanslutning eller försök igen om en stund.");
   }
 }
 
@@ -851,9 +930,17 @@ function getFilteredStocks() {
 // ── Risk-dots rendering ──────────────────────────────────────────
 
 function createRiskDots(score) {
-  const container = el("span", "risk-dots");
-  for (let i = 1; i <= 5; i++) {
-    const dot = el("span", "risk-dot");
+  var container = el("span", "risk-dots");
+  container.setAttribute("aria-label", "Risknivå " + score + " av 5");
+  if (score === 0) {
+    var shield = el("span", "risk-shield");
+    shield.textContent = "✓";
+    shield.title = "Mycket låg risk";
+    container.appendChild(shield);
+    return container;
+  }
+  for (var i = 1; i <= 5; i++) {
+    var dot = el("span", "risk-dot");
     if (i <= score) {
       if (score <= 2) dot.className += " risk-dot-filled-low";
       else if (score <= 3) dot.className += " risk-dot-filled-medium";
@@ -1033,12 +1120,12 @@ function renderStockList() {
 
 async function fetchScannerHits() {
   try {
-    let url = SCANNER_API + "/scanner/today?limit=100";
+    var url = SCANNER_API + "/scanner/today?limit=100";
     if (scannerTier !== "all") url += "&tier=" + scannerTier;
     if (scannerType !== "all") url += "&type=" + scannerType;
-    const res = await fetch(url);
+    var res = await fetchWithTimeout(url, null, 5000);
     if (!res.ok) throw new Error("Scanner API offline");
-    const data = await res.json();
+    var data = await res.json();
     scannerHits = data.hits || [];
     return data;
   } catch (e) {
@@ -1050,25 +1137,26 @@ async function fetchScannerHits() {
 
 async function fetchScannerStats() {
   try {
-    const res = await fetch(SCANNER_API + "/scanner/stats");
+    var res = await fetchWithTimeout(SCANNER_API + "/scanner/stats", null, 5000);
     if (!res.ok) return null;
     return await res.json();
-  } catch { return null; }
+  } catch (e) { return null; }
 }
 
 async function triggerScan() {
-  const btn = document.getElementById("scanner-run-btn");
+  var btn = document.getElementById("scanner-run-btn");
   if (btn) { btn.textContent = "Scannar..."; btn.disabled = true; }
   try {
-    const res = await fetch(SCANNER_API + "/scanner/run", { method: "POST" });
+    var res = await fetchWithTimeout(SCANNER_API + "/scanner/run", { method: "POST" }, 30000);
     if (!res.ok) throw new Error("Scan failed");
     await fetchScannerHits();
     renderStockList();
     updateScannerStatus();
   } catch (e) {
     console.warn("Scan trigger error:", e.message);
+    showErrorToast("Scanning misslyckades. Är backend-servern igång?");
   } finally {
-    if (btn) { btn.textContent = "Kor scan nu"; btn.disabled = false; }
+    if (btn) { btn.textContent = "Kör scan nu"; btn.disabled = false; }
   }
 }
 
@@ -1237,46 +1325,84 @@ function renderScannerCard(hit) {
 
 // ── Raket-prediktion ──────────────────────────────────────────────
 
+function fetchWithTimeout(url, options, timeoutMs) {
+  var controller = new AbortController();
+  var id = setTimeout(function() { controller.abort(); }, timeoutMs || 5000);
+  var opts = Object.assign({}, options || {}, { signal: controller.signal });
+  return fetch(url, opts).finally(function() { clearTimeout(id); });
+}
+
 async function fetchRockets() {
   try {
-    const res = await fetch(SCANNER_API + "/rockets/today");
+    var res = await fetchWithTimeout(SCANNER_API + "/rockets/today", null, 5000);
     if (!res.ok) return;
     rocketData = await res.json();
-  } catch { rocketData = null; }
+  } catch (e) {
+    console.warn("Rocket fetch error:", e.message);
+    rocketData = null;
+  }
 }
 
 async function fetchRocketHistory() {
   try {
-    const res = await fetch(SCANNER_API + "/rockets/history");
+    var res = await fetchWithTimeout(SCANNER_API + "/rockets/history", null, 5000);
     if (!res.ok) return;
-    const data = await res.json();
+    var data = await res.json();
     rocketHistory = data.predictions || [];
-  } catch { rocketHistory = []; }
+  } catch (e) {
+    console.warn("Rocket history fetch error:", e.message);
+    rocketHistory = [];
+  }
+}
+
+async function fetchYesterdayRockets() {
+  try {
+    var res = await fetchWithTimeout(SCANNER_API + "/rockets/yesterday", null, 5000);
+    if (!res.ok) return;
+    var data = await res.json();
+    if (data.rockets && data.rockets.length > 0) {
+      yesterdayRocketData = data;
+    } else {
+      yesterdayRocketData = null;
+    }
+  } catch (e) {
+    console.warn("Yesterday rockets fetch error:", e.message);
+    yesterdayRocketData = null;
+  }
 }
 
 async function generateRockets() {
+  var btn = document.querySelector("#stock-list-section .stock-card-detail-btn");
+  if (btn) { btn.textContent = "Genererar..."; btn.disabled = true; }
   try {
-    const res = await fetch(SCANNER_API + "/rockets/generate", { method: "POST" });
+    var res = await fetchWithTimeout(SCANNER_API + "/rockets/generate", { method: "POST" }, 15000);
     if (!res.ok) throw new Error("Generate failed");
     rocketData = await res.json();
+    await fetchRocketHistory();
+    await fetchYesterdayRockets();
     renderStockList();
   } catch (e) {
     console.warn("Rocket generate error:", e.message);
+    showErrorToast("Kunde inte generera raketer. Är backend-servern igång? (cd server && npm start)");
+  } finally {
+    if (btn) { btn.textContent = "Generera nya raketer"; btn.disabled = false; }
   }
 }
 
 async function verifyRockets(date) {
   try {
-    const res = await fetch(SCANNER_API + "/rockets/verify", {
+    var res = await fetchWithTimeout(SCANNER_API + "/rockets/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date }),
-    });
+      body: JSON.stringify({ date: date }),
+    }, 10000);
     if (!res.ok) return;
     await fetchRocketHistory();
+    await fetchYesterdayRockets();
     renderStockList();
   } catch (e) {
     console.warn("Rocket verify error:", e.message);
+    showErrorToast("Kunde inte verifiera raketer. Backend offline?");
   }
 }
 
@@ -1289,7 +1415,7 @@ function renderRocketList(section) {
   title.style.cssText = "font-size:1.5rem;margin-bottom:8px;color:#f4d35e";
   headerCard.appendChild(title);
   const subtitle = el("p", "stock-card-sector");
-  subtitle.textContent = "Topp 5 aktier under $10 med storst potential att stiga imorgon. Baserat pa dagens momentum, volym, katalysatorer och scanner-data.";
+  subtitle.textContent = "Topp 3 aktier under $10 med storst potential att stiga nasta handelsdag. Pump-flaggor uteslutna automatiskt.";
   headerCard.appendChild(subtitle);
 
   const btnRow = el("div", "");
@@ -1302,13 +1428,27 @@ function renderRocketList(section) {
   headerCard.appendChild(btnRow);
   section.appendChild(headerCard);
 
-  // Today's rockets
+  // Gårdagens tips (publicerade igår – för uppföljning)
+  if (yesterdayRocketData && yesterdayRocketData.rockets && yesterdayRocketData.rockets.length > 0) {
+    renderYesterdayRocketSection(section);
+  }
+
+  // Morgondagens raketer (dagens prediktion)
+  const todayTitle = el("div", "card");
+  todayTitle.style.cssText = "padding:12px 16px;margin-top:8px";
+  todayTitle.appendChild(el("h3", "ta-subtitle", "Morgondagens raketer"));
+  section.appendChild(todayTitle);
+
   if (!rocketData || !rocketData.rockets || rocketData.rockets.length === 0) {
-    const empty = el("div", "card");
+    var empty = el("div", "card");
     empty.style.cssText = "text-align:center;padding:32px";
-    empty.appendChild(el("h3", "ta-subtitle", "Inga raketer genererade an"));
-    const desc = el("p", "stock-card-sector");
-    desc.textContent = "Klicka 'Generera nya raketer' efter att scannern har kort.";
+    empty.appendChild(el("h3", "ta-subtitle", "Inga raketer genererade ännu"));
+    var desc = el("p", "stock-card-sector");
+    if (!rocketData) {
+      desc.textContent = "Backend-servern verkar vara offline. Starta den med: cd server && npm start";
+    } else {
+      desc.textContent = "Klicka 'Generera nya raketer' efter att scannern har kört.";
+    }
     empty.appendChild(desc);
     section.appendChild(empty);
   } else {
@@ -1340,7 +1480,47 @@ function renderRocketList(section) {
   }
 }
 
-function renderRocketCard(rocket, rank) {
+function renderYesterdayRocketSection(section) {
+  const y = yesterdayRocketData;
+  const wrap = el("div", "card rocket-yesterday-section");
+  wrap.style.cssText = "padding:16px;margin-bottom:12px;border:1px solid rgba(109,213,237,0.25);background:rgba(109,213,237,0.04)";
+
+  const head = el("div", "");
+  head.style.cssText = "display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:12px";
+  const headText = el("div", "");
+  headText.appendChild(el("h3", "ta-subtitle", "Gårdagens tips"));
+  const meta = el("p", "stock-card-sector");
+  meta.textContent = "Publicerade " + y.prediction_date + " · Gäller " + y.target_date +
+    (y.target_day ? " (" + y.target_day + ")" : "");
+  headText.appendChild(meta);
+  head.appendChild(headText);
+
+  const hasVerified = y.verification && y.verification.result;
+  if (hasVerified) {
+    const sum = y.verification.result;
+    const badge = el("span", "");
+    const rockets20 = sum.rockets_20pct != null ? sum.rockets_20pct : 0;
+    badge.style.cssText = "padding:6px 14px;border-radius:999px;font-weight:700;font-size:0.85rem;background:rgba(109,213,237,0.12);color:#6dd5ed;border:1px solid rgba(109,213,237,0.35)";
+    badge.textContent = rockets20 + " raket(er) +20% · Snitt " + (sum.avg_change >= 0 ? "+" : "") + sum.avg_change + "%";
+    head.appendChild(badge);
+  } else {
+    const verifyBtn = el("button", "stock-card-detail-btn");
+    verifyBtn.textContent = "Verifiera gårdagens resultat";
+    verifyBtn.style.cssText = "width:auto;padding:6px 16px;font-size:0.85rem";
+    verifyBtn.addEventListener("click", function() {
+      verifyRockets(y.prediction_date);
+    });
+    head.appendChild(verifyBtn);
+  }
+  wrap.appendChild(head);
+
+  y.rockets.forEach(function(rocket, i) {
+    wrap.appendChild(renderRocketCard(rocket, i + 1, true));
+  });
+  section.appendChild(wrap);
+}
+
+function renderRocketCard(rocket, rank, isYesterday) {
   const riskScore = rocket.risk_score || 3;
   const borderClass = riskScore <= 2 ? "stock-card-buy" : riskScore <= 3 ? "stock-card-hold" : "stock-card-sell";
   const card = el("div", "stock-card card " + borderClass);
@@ -1349,11 +1529,12 @@ function renderRocketCard(rocket, rank) {
   // Rank badge
   const rankBadge = el("div", "");
   rankBadge.textContent = "#" + rank;
-  rankBadge.style.cssText = "position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#f4d35e,#ee964b);color:#0a0a23;font-weight:800;font-size:1.2rem;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center";
+  rankBadge.style.cssText = "position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#f4d35e,#ee964b);color:#0a0a23;font-weight:800;font-size:1.2rem;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:1";
   card.appendChild(rankBadge);
 
   // Header
   const header = el("div", "stock-card-header");
+  header.style.paddingRight = "48px";
   const info = el("div", "stock-card-info");
   info.appendChild(el("span", "stock-card-name", rocket.name));
   info.appendChild(el("span", "stock-card-ticker", rocket.ticker));
@@ -1393,13 +1574,20 @@ function renderRocketCard(rocket, rank) {
   reason.style.webkitLineClamp = "3";
   card.appendChild(reason);
 
-  // Volume info
+  // Volume info + mål/stop för gårdagens tips
   const volRow = el("div", "stock-card-indicators");
+  const price = rocket.price_at_prediction || 0;
   const volItems = [
     ["Volym", rocket.volume > 0 ? formatLargeNumber(rocket.volume) : "--"],
     ["Rel. volym", (rocket.relative_volume || 0).toFixed(1) + "x"],
-    ["Pris", "$" + (rocket.price_at_prediction || 0).toFixed(2)],
+    ["Pris", "$" + price.toFixed(2)],
   ];
+  if (rocket.target_20pct != null) {
+    volItems.push(["Mål +20%", "$" + Number(rocket.target_20pct).toFixed(2)]);
+  }
+  if (rocket.stop_loss_8pct != null) {
+    volItems.push(["Stop −8%", "$" + Number(rocket.stop_loss_8pct).toFixed(2)]);
+  }
   volItems.forEach(([label, value]) => {
     const ind = el("div", "stock-mini-indicator");
     ind.appendChild(el("span", "label", label));
@@ -1425,15 +1613,36 @@ function renderRocketCard(rocket, rank) {
   // Result if verified
   if (rocket.result) {
     const resRow = el("div", "");
-    const wasCorrect = rocket.result.was_correct;
-    resRow.style.cssText = "padding:10px;margin-top:8px;border-radius:8px;background:" +
-      (wasCorrect ? "rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3)" : "rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3)");
-    const icon = wasCorrect ? "+" : "";
+    const r = rocket.result;
+    let label, bg, color;
+    if (r.hit_20pct) {
+      label = "RAKET +20% · " + (r.change_pct >= 0 ? "+" : "") + r.change_pct.toFixed(1) + "% · Nu: $" + r.current_price.toFixed(2);
+      bg = "rgba(244,211,94,0.15);border:1px solid rgba(244,211,94,0.4)";
+      color = "#f4d35e";
+    } else if (r.hit_stop_loss) {
+      label = "STOP-LOSS · " + r.change_pct.toFixed(1) + "% · Nu: $" + r.current_price.toFixed(2);
+      bg = "rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3)";
+      color = "#ff6f61";
+    } else if (r.was_correct) {
+      label = "UPP · +" + r.change_pct.toFixed(1) + "% · Nu: $" + r.current_price.toFixed(2);
+      bg = "rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3)";
+      color = "#2ecc71";
+    } else {
+      label = "NED · " + r.change_pct.toFixed(1) + "% · Nu: $" + r.current_price.toFixed(2);
+      bg = "rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3)";
+      color = "#ff6f61";
+    }
+    resRow.style.cssText = "padding:10px;margin-top:8px;border-radius:8px;background:" + bg;
     const resText = el("span", "");
-    resText.style.cssText = "font-weight:700;color:" + (wasCorrect ? "#2ecc71" : "#ff6f61");
-    resText.textContent = (wasCorrect ? "KORREKT " : "FEL ") + icon + rocket.result.change_pct.toFixed(1) + "% | Nu: $" + rocket.result.current_price.toFixed(2);
+    resText.style.cssText = "font-weight:700;color:" + color;
+    resText.textContent = label;
     resRow.appendChild(resText);
     card.appendChild(resRow);
+  } else if (isYesterday && rocket.target_20pct != null) {
+    const pending = el("p", "stock-card-sector");
+    pending.style.cssText = "margin-top:8px;font-size:0.8rem";
+    pending.textContent = "Väntar på verifiering efter stängning " + (yesterdayRocketData.target_date || "");
+    card.appendChild(pending);
   }
 
   return card;
@@ -1548,6 +1757,14 @@ function openDetailView(stock) {
 
   document.getElementById("detail-time-horizon").textContent = stock.timeHorizon;
   document.getElementById("detail-risk-level").textContent = stock.riskLevel;
+
+  // Penny stock-varning
+  var pennyWarning = document.getElementById("detail-penny-warning");
+  if (pennyWarning) {
+    var currentPrice = cached ? parseFloat(cached.close) : null;
+    var isPenny = (currentPrice != null && currentPrice < 5) || stock.riskScore >= 5;
+    pennyWarning.style.display = isPenny ? "block" : "none";
+  }
 
   // Motivering
   document.getElementById("detail-motivation").textContent = stock.motivation;
@@ -2134,7 +2351,7 @@ function startCountdown() {
 
     if (countdownValue <= 0) {
       countdownValue = REFRESH_SECONDS;
-      // Refresh data
+      pruneCache();
       renderStockList();
       restoreCachedPrices();
       if (hasApiKey("twelveData")) {
@@ -2175,8 +2392,10 @@ function setupEventHandlers() {
     tab.addEventListener("click", () => {
       document.querySelectorAll(".stock-tab").forEach((t) => {
         t.classList.remove("stock-tab-active");
+        t.setAttribute("aria-selected", "false");
       });
       tab.classList.add("stock-tab-active");
+      tab.setAttribute("aria-selected", "true");
       currentHorizon = tab.dataset.horizon;
 
       // Toggle scanner status section
@@ -2184,11 +2403,34 @@ function setupEventHandlers() {
       if (scannerSection) {
         scannerSection.style.display = currentHorizon === "scanner" ? "block" : "none";
       }
+      // Hide filters for rockets (they don't apply)
+      const filtersSection = document.querySelector(".stock-filters");
+      if (filtersSection) {
+        filtersSection.style.display = currentHorizon === "rockets" ? "none" : "";
+      }
+
+      var myRequestId = ++tabRequestId;
 
       if (currentHorizon === "rockets") {
-        Promise.all([fetchRockets(), fetchRocketHistory()]).then(() => renderStockList());
+        // Visa laddningstillstånd direkt
+        var rocketSection = document.getElementById("stock-list-section");
+        if (rocketSection) {
+          clearChildren(rocketSection);
+          var loadingCard = el("div", "card");
+          loadingCard.style.cssText = "text-align:center;padding:32px";
+          loadingCard.appendChild(el("p", "stock-card-sector loading-pulse", "Hämtar raketdata..."));
+          rocketSection.appendChild(loadingCard);
+        }
+        Promise.all([fetchRockets(), fetchRocketHistory(), fetchYesterdayRockets()]).then(function() {
+          if (tabRequestId !== myRequestId) return;
+          renderStockList();
+          if (!rocketData) {
+            showErrorToast("Backend offline. Starta servern: cd server && npm start");
+          }
+        });
       } else if (currentHorizon === "scanner") {
-        fetchScannerHits().then(() => {
+        fetchScannerHits().then(function() {
+          if (tabRequestId !== myRequestId) return;
           renderStockList();
           updateScannerStatus();
         });
@@ -2318,6 +2560,22 @@ function init() {
   // 6. Starta countdown
   startCountdown();
 }
+
+// ── Exportera funktioner for testning ────────────────────────────
+window.StocksApp = {
+  fmtPrice: fmtPrice,
+  fmtPct: fmtPct,
+  fmtLarge: fmtLarge,
+  generateTASignal: generateTASignal,
+  calculateSupportResistance: calculateSupportResistance,
+  createRiskDots: createRiskDots,
+  showErrorToast: showErrorToast,
+  fetchWithTimeout: fetchWithTimeout,
+  el: el,
+  clearChildren: clearChildren,
+  hasApiKey: hasApiKey,
+  formatLargeNumber: formatLargeNumber
+};
 
 // Starta applikationen
 document.addEventListener("DOMContentLoaded", init);

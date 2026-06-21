@@ -325,6 +325,51 @@ function writeRocketSnapshot(snapshot) {
   fs.writeFileSync(snapshotPathForTargetDate(snapshot.target_date), JSON.stringify(snapshot, null, 2), "utf-8");
 }
 
+function getYesterdayCalendarDate() {
+  const today = new Date().toISOString().split("T")[0];
+  const d = new Date(today + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().split("T")[0];
+}
+
+function listRocketSnapshotFiles() {
+  if (!fs.existsSync(PREDICTIONS_DIR)) return [];
+  return fs.readdirSync(PREDICTIONS_DIR).filter(f => f.endsWith("-morgondagens-raketer.json"));
+}
+
+function readSnapshotFile(filename) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(PREDICTIONS_DIR, filename), "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+/** Tips publicerade igår (prediction_date = gårdagen). */
+function getYesterdayRocketTips() {
+  const yesterday = getYesterdayCalendarDate();
+  const today = new Date().toISOString().split("T")[0];
+
+  for (const file of listRocketSnapshotFiles()) {
+    const snap = readSnapshotFile(file);
+    if (snap && snap.prediction_date === yesterday) return snap;
+  }
+
+  const pred = getRockets(yesterday);
+  if (pred && pred.rockets && pred.rockets.length > 0) {
+    return buildRocketSnapshot(pred);
+  }
+
+  let latest = null;
+  for (const file of listRocketSnapshotFiles()) {
+    const snap = readSnapshotFile(file);
+    if (snap && snap.prediction_date < today) {
+      if (!latest || snap.prediction_date > latest.prediction_date) latest = snap;
+    }
+  }
+  return latest;
+}
+
 module.exports = {
   generateRockets,
   verifyRockets,
@@ -334,6 +379,7 @@ module.exports = {
   isPumpFlagged,
   saveRocketSnapshot,
   readRocketSnapshot,
+  getYesterdayRocketTips,
   MIN_ROCKET_SCORE,
   DEFAULT_ROCKET_COUNT,
 };

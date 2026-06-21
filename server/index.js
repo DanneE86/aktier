@@ -5,14 +5,19 @@ const cron = require("node-cron");
 const db = require("./db");
 const { runFullScan, CONFIG } = require("./scanner");
 const { registerFloatRoutes, runFloatSqueezeScan, DEFAULT_SQUEEZE_WATCHLIST } = require("./float-scanner");
-const { generateRockets, verifyRockets, getRockets, getRocketHistory } = require("./rocket-engine");
+const { generateRockets, verifyRockets, getRockets, getRocketHistory, getYesterdayRocketTips } = require("./rocket-engine");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "..")));
+app.use(express.static(path.join(__dirname, ".."), { etag: false, maxAge: 0 }));
+
+// ── Input validation ───────────────────────────────────────────
+const ALLOWED_TYPES = ["momentum", "catalyst", "watchlist", "trending"];
+const ALLOWED_TIERS = ["under1", "under5", "5to10"];
+const ALLOWED_SORTS = ["confidence", "price", "change", "risk"];
 
 // ── API ROUTES ──────────────────────────────────────────────────
 
@@ -20,18 +25,22 @@ app.get("/api/scanner/today", (req, res) => {
   const today = new Date().toISOString().split("T")[0];
   let hits = db.getHitsForDate(today);
 
-  // Filter by type (momentum, catalyst, watchlist, trending)
+  // Filter by type (validated)
   const type = req.query.type;
-  if (type) hits = hits.filter((h) => h.scanner_type === type);
+  if (type && ALLOWED_TYPES.includes(type)) {
+    hits = hits.filter((h) => h.scanner_type === type);
+  }
 
-  // Filter by price tier (under1, under5, under10)
+  // Filter by price tier (validated)
   const tier = req.query.tier;
-  if (tier === "under1") hits = hits.filter((h) => h.price < 1);
-  else if (tier === "under5") hits = hits.filter((h) => h.price < 5);
-  else if (tier === "5to10") hits = hits.filter((h) => h.price >= 5 && h.price <= 10);
+  if (tier && ALLOWED_TIERS.includes(tier)) {
+    if (tier === "under1") hits = hits.filter((h) => h.price < 1);
+    else if (tier === "under5") hits = hits.filter((h) => h.price < 5);
+    else if (tier === "5to10") hits = hits.filter((h) => h.price >= 5 && h.price <= 10);
+  }
 
-  // Sort by confidence or price
-  const sort = req.query.sort || "confidence";
+  // Sort (validated)
+  const sort = ALLOWED_SORTS.includes(req.query.sort) ? req.query.sort : "confidence";
   if (sort === "price") hits.sort((a, b) => a.price - b.price);
   else if (sort === "change") hits.sort((a, b) => Math.abs(b.change_pct || 0) - Math.abs(a.change_pct || 0));
   else if (sort === "risk") hits.sort((a, b) => (a.risk_score || 3) - (b.risk_score || 3));
@@ -111,6 +120,12 @@ app.post("/api/rockets/generate", (req, res) => {
 app.get("/api/rockets/history", (req, res) => {
   const history = getRocketHistory();
   res.json({ count: history.length, predictions: history });
+});
+
+app.get("/api/rockets/yesterday", (req, res) => {
+  const tips = getYesterdayRocketTips();
+  if (!tips) return res.json({ rockets: [], message: "Inga sparade tips fran igar." });
+  res.json(tips);
 });
 
 app.post("/api/rockets/verify", async (req, res) => {
