@@ -5,6 +5,11 @@ const db = require("./db");
 const PREDICTIONS_DIR = path.join(__dirname, "predictions");
 const ROCKETS_DB = path.join(PREDICTIONS_DIR, "rockets.json");
 
+/** Min score enligt Rocket Signal Aggregator – under detta publiceras ingen pick. */
+const MIN_ROCKET_SCORE = 65;
+/** Max antal raketer per dag (Signal Aggregator: max 3). */
+const DEFAULT_ROCKET_COUNT = 3;
+
 function readRocketsDb() {
   try {
     if (fs.existsSync(ROCKETS_DB)) {
@@ -26,6 +31,35 @@ function getNextTradingDay(dateStr) {
   d.setDate(d.getDate() + 1);
   while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
   return d.toISOString().split("T")[0];
+}
+
+function triggerReason(hit) {
+  return (hit.trigger_reason || "").toLowerCase();
+}
+
+function riskFlagsString(hit) {
+  return typeof hit.risk_flags === "string"
+    ? hit.risk_flags
+    : JSON.stringify(hit.risk_flags || []);
+}
+
+/** Hårt filter: pump-flaggor från scannern eller extrem rörelse utan katalysator. */
+function isPumpFlagged(hit) {
+  const reason = triggerReason(hit);
+  if (reason.includes("pump-varning") || reason.includes("pump warning")) return true;
+
+  const flags = riskFlagsString(hit);
+  const hasCatalyst =
+    reason.includes("sec") ||
+    reason.includes("8-k") ||
+    reason.includes("insider") ||
+    reason.includes("ceo") ||
+    reason.includes("fda") ||
+    reason.includes("earnings");
+
+  if (flags.includes("Extreme daily move") && !hasCatalyst) return true;
+
+  return false;
 }
 
 function scoreForRocket(hit) {
@@ -54,7 +88,7 @@ function scoreForRocket(hit) {
   score += Math.min(layers * 5, 15);
 
   // 5. Catalyst presence (SEC filing, insider, etc.)
-  const reason = (hit.trigger_reason || "").toLowerCase();
+  const reason = triggerReason(hit);
   if (reason.includes("sec") || reason.includes("8-k")) score += 10;
   if (reason.includes("insider") || reason.includes("ceo")) score += 10;
   if (reason.includes("52v-high") || reason.includes("breakout")) score += 10;
@@ -67,9 +101,8 @@ function scoreForRocket(hit) {
   else if (risk >= 4) score -= 5;
   else if (risk <= 2) score += 5;
 
-  // 7. Red flags
-  if (reason.includes("pump-varning") || reason.includes("pump")) score -= 20;
-  const flags = typeof hit.risk_flags === "string" ? hit.risk_flags : JSON.stringify(hit.risk_flags || []);
+  // 7. Red flags (pump hanteras via isPumpFlagged – hårt uteslutna före scoring)
+  const flags = riskFlagsString(hit);
   if (flags.includes("Extreme daily move")) score -= 5;
 
   // 8. Price tier bonus (under $1 = higher percentage potential)
@@ -80,17 +113,26 @@ function scoreForRocket(hit) {
 }
 
 function generateRockets(options = {}) {
-  const { count = 5, maxPrice = 10, minPrice = 0.01 } = options;
+  const {
+    count = DEFAULT_ROCKET_COUNT,
+    maxPrice = 10,
+    minPrice = 0.01,
+    minScore = MIN_ROCKET_SCORE,
+  } = options;
   const today = new Date().toISOString().split("T")[0];
   const targetDate = getNextTradingDay(today);
 
   const hits = db.getHitsForDate(today);
   if (hits.length === 0) return null;
 
-  // Score all hits
-  const scored = hits
-    .filter(h => h.price >= minPrice && h.price <= maxPrice)
-    .filter(h => h.change_pct > 0) // Only bullish candidates
+  const inPriceRange = h => h.price >= minPrice && h.price <= maxPrice;
+  const bullish = h => h.change_pct > 0;
+
+  const candidates = hits.filter(h => inPriceRange(h) && bullish(h));
+  const excludedPump = candidates.filter(isPumpFlagged);
+  const eligible = candidates.filter(h => !isPumpFlagged(h));
+
+  const scored = eligible
     .map(h => ({
       ...h,
       rocket_score: scoreForRocket(h),
@@ -98,7 +140,8 @@ function generateRockets(options = {}) {
     }))
     .sort((a, b) => b.rocket_score - a.rocket_score);
 
-  const top = scored.slice(0, count);
+  const qualified = scored.filter(h => h.rocket_score >= minScore);
+  const top = qualified.slice(0, count);
 
   const prediction = {
     id: `rocket-${today}`,
@@ -107,6 +150,12 @@ function generateRockets(options = {}) {
     generated_at: new Date().toISOString(),
     scanner_universe: hits.length,
     candidates_scored: scored.length,
+    filters: {
+      min_rocket_score: minScore,
+      max_picks: count,
+      excluded_pump_count: excludedPump.length,
+      below_threshold_count: scored.length - qualified.length,
+    },
     rockets: top.map(h => ({
       ticker: h.ticker,
       name: h.name || h.ticker,
@@ -133,6 +182,7 @@ function generateRockets(options = {}) {
     rdb.predictions.push(prediction);
   }
   writeRocketsDb(rdb);
+  saveRocketSnapshot(prediction);
 
   return prediction;
 }
@@ -166,6 +216,8 @@ async function verifyRockets(predictionDate) {
         current_price: currentPrice,
         change_pct: Math.round(changePct * 100) / 100,
         was_correct: changePct > 0,
+        hit_20pct: changePct >= 20,
+        hit_stop_loss: changePct <= -8,
       };
     }
 
@@ -175,12 +227,25 @@ async function verifyRockets(predictionDate) {
       verified_count: verified.length,
       correct_count: correct.length,
       hit_rate: verified.length > 0 ? Math.round((correct.length / verified.length) * 100) : 0,
+      rockets_20pct: verified.filter(r => r.result.hit_20pct).length,
       avg_change: verified.length > 0
         ? Math.round(verified.reduce((s, r) => s + r.result.change_pct, 0) / verified.length * 100) / 100
         : 0,
     };
 
     writeRocketsDb(rdb);
+
+    const snapshot = readRocketSnapshot(pred.target_date);
+    if (snapshot) {
+      snapshot.verification = {
+        ...snapshot.verification,
+        verified_at: new Date().toISOString(),
+        result: pred.summary,
+        rockets: pred.rockets.map(r => ({ ticker: r.ticker, result: r.result || null })),
+      };
+      writeRocketSnapshot(snapshot);
+    }
+
     return pred;
   } catch (e) {
     console.warn("Rocket verification error:", e.message);
@@ -202,9 +267,73 @@ function getRocketHistory() {
 
 function safeJsonParse(str) { try { return JSON.parse(str); } catch { return []; } }
 
+const WEEKDAY_NAMES = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+];
+
+function getWeekdayName(dateStr) {
+  return WEEKDAY_NAMES[new Date(dateStr + "T12:00:00Z").getUTCDay()];
+}
+
+/** Snapshot för manuell uppföljning – en fil per målhandelsdag. */
+function buildRocketSnapshot(prediction) {
+  const price = p => p.price_at_prediction;
+  return {
+    title: "Morgondagens raketer",
+    prediction_date: prediction.prediction_date,
+    target_date: prediction.target_date,
+    target_day: getWeekdayName(prediction.target_date),
+    generated_at: prediction.generated_at,
+    scanner_universe: prediction.scanner_universe,
+    filters: prediction.filters,
+    rockets: prediction.rockets.map(r => ({
+      ...r,
+      target_20pct: Math.round(price(r) * 1.2 * 100) / 100,
+      stop_loss_8pct: Math.round(price(r) * 0.92 * 100) / 100,
+    })),
+    verification: {
+      check_date: prediction.target_date,
+      check_time: "16:00 ET (market close)",
+      success_criteria: "+20% fran price_at_prediction = raket träffad. Under -8% = stop-loss.",
+      result: null,
+    },
+  };
+}
+
+function snapshotPathForTargetDate(targetDate) {
+  return path.join(PREDICTIONS_DIR, `${targetDate}-morgondagens-raketer.json`);
+}
+
+function saveRocketSnapshot(prediction) {
+  if (!fs.existsSync(PREDICTIONS_DIR)) fs.mkdirSync(PREDICTIONS_DIR, { recursive: true });
+  const snapshot = buildRocketSnapshot(prediction);
+  fs.writeFileSync(snapshotPathForTargetDate(prediction.target_date), JSON.stringify(snapshot, null, 2), "utf-8");
+  return snapshot;
+}
+
+function readRocketSnapshot(targetDate) {
+  const file = snapshotPathForTargetDate(targetDate);
+  if (!fs.existsSync(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+function writeRocketSnapshot(snapshot) {
+  fs.writeFileSync(snapshotPathForTargetDate(snapshot.target_date), JSON.stringify(snapshot, null, 2), "utf-8");
+}
+
 module.exports = {
   generateRockets,
   verifyRockets,
   getRockets,
   getRocketHistory,
+  scoreForRocket,
+  isPumpFlagged,
+  saveRocketSnapshot,
+  readRocketSnapshot,
+  MIN_ROCKET_SCORE,
+  DEFAULT_ROCKET_COUNT,
 };

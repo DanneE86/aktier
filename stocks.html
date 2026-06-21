@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aktieanalys – Kop/Salj-signaler &amp; Teknisk Analys</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="stocks-style.css">
+  <title>Aktieanalys – Köp/Sälj-signaler &amp; Teknisk Analys</title>
+  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="stocks-style.css?v=4">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 </head>
@@ -13,74 +13,61 @@
   <div class="container">
 
     <!-- ===== NAVIGATION ===== -->
-    <nav class="nav-bar">
+    <nav class="nav-bar" role="navigation" aria-label="Huvudnavigation">
       <a href="index.html" class="nav-link">
-        <span class="nav-icon">&Xi;</span> ETH Tracker
+        <span class="nav-icon" aria-hidden="true">&Xi;</span> ETH Tracker
       </a>
-      <a href="stocks.html" class="nav-link nav-link-active">
-        <span class="nav-icon">$</span> Aktieanalys
+      <a href="stocks.html" class="nav-link nav-link-active" aria-current="page">
+        <span class="nav-icon" aria-hidden="true">$</span> Aktieanalys
       </a>
     </nav>
 
     <!-- ===== HEADER ===== -->
     <header>
       <h1>Aktieanalys</h1>
-      <p class="subtitle">Kop/salj-signaler, tekniska indikatorer &amp; bevakningslista for svenska och amerikanska aktier</p>
+      <p class="subtitle">Köp/sälj-signaler, tekniska indikatorer &amp; bevakningslista för svenska och amerikanska aktier</p>
     </header>
-
-    <!-- ===== API-STATUS ===== -->
-    <section id="api-status-card" class="card">
-      <div class="api-status-row">
-        <span class="label">Datakalla</span>
-        <span id="api-status-badge" class="src-badge src-neutral">Ansluter...</span>
-        <span class="label" style="margin-left:auto">Senast uppdaterad</span>
-        <span id="stocks-last-updated" class="price-small">--</span>
-      </div>
-      <p class="auto-refresh">
-        Data fordrojd ~4 timmar (Twelve Data gratis-tier) &ndash; nasta uppdatering om <span id="stocks-countdown">300</span> s
-      </p>
-    </section>
 
     <!-- ===== FLIKNAVIGERING: TIDSHORISONT ===== -->
     <section class="card" id="horizon-card">
-      <div class="stock-tabs">
-        <button class="stock-tab" data-horizon="rockets">
-          Raketer
+      <div class="stock-tabs" role="tablist" aria-label="Tidshorisont">
+        <button class="stock-tab" data-horizon="rockets" role="tab" aria-selected="false">
+          Raketer (topp 3)
         </button>
-        <button class="stock-tab" data-horizon="scanner">
+        <button class="stock-tab" data-horizon="scanner" role="tab" aria-selected="false">
           Scanner (under $10)
         </button>
-        <button class="stock-tab stock-tab-active" data-horizon="short">
-          Kortsiktig (1v-1m)
+        <button class="stock-tab stock-tab-active" data-horizon="short" role="tab" aria-selected="true">
+          Kortsiktig (1v–1m)
         </button>
-        <button class="stock-tab" data-horizon="long">
-          Langsiktig (ar)
+        <button class="stock-tab" data-horizon="long" role="tab" aria-selected="false">
+          Långsiktig (år)
         </button>
       </div>
 
       <!-- FILTER-RAD -->
       <div class="stock-filters">
         <div class="filter-group">
-          <span class="label">Marknad</span>
-          <div class="filter-buttons">
+          <span class="label" id="market-filter-label">Marknad</span>
+          <div class="filter-buttons" role="group" aria-labelledby="market-filter-label">
             <button class="filter-btn filter-btn-active" data-market="all">Alla</button>
             <button class="filter-btn" data-market="SE">Sverige</button>
             <button class="filter-btn" data-market="US">USA</button>
           </div>
         </div>
         <div class="filter-group">
-          <span class="label">Sortera</span>
+          <label class="label" for="sort-select">Sortera</label>
           <select id="sort-select" class="alarm-select">
-            <option value="signal">Signal (kop forst)</option>
-            <option value="risk">Riskniva (lagst forst)</option>
-            <option value="sector">Sektor (A-O)</option>
-            <option value="name">Namn (A-O)</option>
+            <option value="signal">Signal (köp först)</option>
+            <option value="risk">Risknivå (lägst först)</option>
+            <option value="sector">Sektor (A–Ö)</option>
+            <option value="name">Namn (A–Ö)</option>
           </select>
         </div>
       </div>
     </section>
 
-    <!-- ===== SCANNER STATUS (visas bara i scanner-lage) ===== -->
+    <!-- ===== SCANNER STATUS (visas bara i scanner-läge) ===== -->
     <section id="scanner-status-section" class="card" style="display:none">
       <div class="scanner-status-row">
         <div>
@@ -92,7 +79,7 @@
           <span id="scanner-scanned-count" class="price-small">--</span>
         </div>
         <div>
-          <span class="label">Traffar</span>
+          <span class="label">Träffar</span>
           <span id="scanner-hit-count" class="price-small">--</span>
         </div>
         <button id="scanner-run-btn" class="stock-card-detail-btn" style="width:auto;padding:6px 16px">
@@ -104,16 +91,16 @@
       <div class="stock-filters" style="margin-top:12px">
         <div class="filter-group">
           <span class="label">Prisklass</span>
-          <div class="filter-buttons">
+          <div class="filter-buttons" role="group" aria-label="Prisklassfilter">
             <button class="filter-btn filter-btn-active" data-tier="all">Alla under $10</button>
             <button class="filter-btn" data-tier="under1">Under $1</button>
-            <button class="filter-btn" data-tier="under5">$1 - $5</button>
-            <button class="filter-btn" data-tier="5to10">$5 - $10</button>
+            <button class="filter-btn" data-tier="under5">$1 – $5</button>
+            <button class="filter-btn" data-tier="5to10">$5 – $10</button>
           </div>
         </div>
         <div class="filter-group">
           <span class="label">Typ</span>
-          <div class="filter-buttons">
+          <div class="filter-buttons" role="group" aria-label="Typfilter">
             <button class="filter-btn filter-btn-active" data-scantype="all">Alla</button>
             <button class="filter-btn" data-scantype="momentum">Momentum</button>
             <button class="filter-btn" data-scantype="catalyst">Katalysator</button>
@@ -123,20 +110,31 @@
       </div>
 
       <p class="auto-refresh" style="margin-top:8px">
-        Skannar hela marknaden for aktier under $10 med ovanlig aktivitet, SEC-katalysatorer och momentum.
-        Varje traff visas med riskpoang (1-5). Rod flagg = extra forsiktighet.
+        Skannar hela marknaden för aktier under $10 med ovanlig aktivitet, SEC-katalysatorer och momentum.
+        Varje träff visas med riskpoäng (1–5). Röd flagg = extra försiktighet.
       </p>
     </section>
 
+    <!-- ===== API-STATUS (kompakt) ===== -->
+    <section id="api-status-card" class="card" style="padding:8px 16px">
+      <div class="api-status-row" style="font-size:0.8rem">
+        <span class="label">Datakälla</span>
+        <span id="api-status-badge" class="src-badge src-neutral" style="font-size:0.7rem">Ansluter...</span>
+        <span class="label" style="margin-left:auto">Uppdaterad</span>
+        <span id="stocks-last-updated" class="price-small" style="font-size:0.8rem">--</span>
+        <span class="price-small" style="font-size:0.75rem;margin-left:8px;color:var(--color-text-muted, #8b91ab)">(<span id="stocks-countdown">300</span>s)</span>
+      </div>
+    </section>
+
     <!-- ===== AKTIELISTA ===== -->
-    <section id="stock-list-section">
+    <section id="stock-list-section" aria-label="Aktielista">
       <!-- Renderas dynamiskt av stocks.js -->
     </section>
 
     <!-- ===== DETALJVY (MODAL / OVERLAY) ===== -->
-    <section id="stock-detail-overlay" class="stock-detail-overlay" style="display:none">
+    <section id="stock-detail-overlay" class="stock-detail-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Detaljerad aktieanalys">
       <div class="stock-detail-container card">
-        <button id="detail-close-btn" class="detail-close-btn">X Stang</button>
+        <button id="detail-close-btn" class="detail-close-btn" aria-label="Stäng detaljvy">&times; Stäng</button>
 
         <!-- Rubrik -->
         <div class="detail-header">
@@ -161,10 +159,16 @@
               <span id="detail-time-horizon" class="price-small">--</span>
             </div>
             <div>
-              <span class="label">Riskniva</span>
+              <span class="label">Risknivå</span>
               <span id="detail-risk-level" class="price-small">--</span>
             </div>
           </div>
+        </div>
+
+        <!-- Penny stock-varning (visas dynamiskt) -->
+        <div id="detail-penny-warning" class="penny-stock-warning" style="display:none" role="alert">
+          <strong>&#9888; Penny Stock-varning</strong>
+          <p>Denna aktie handlas under $5. Penny stocks har extrem volatilitet, låg likviditet och hög risk för totalförlust. Bolaget kan avlistas eller genomföra reverse split. Investera aldrig mer än du har råd att förlora.</p>
         </div>
 
         <!-- Motivering -->
@@ -189,7 +193,7 @@
 
         <!-- Prisgraf -->
         <div class="detail-chart-section">
-          <h3 class="ta-subtitle">Prishistorik (6 manader) <span class="ta-badge">TA</span></h3>
+          <h3 class="ta-subtitle">Prishistorik (6 månader) <span class="ta-badge">TA</span></h3>
           <canvas id="detail-chart" height="200"></canvas>
         </div>
 
@@ -240,16 +244,16 @@
           </div>
         </div>
 
-        <!-- Stod/Motstand -->
+        <!-- Stöd/Motstånd -->
         <div class="detail-levels-section">
-          <h3 class="ta-subtitle">Stod &amp; Motstand</h3>
+          <h3 class="ta-subtitle">Stöd &amp; Motstånd</h3>
           <div class="ta-grid">
             <div class="ta-col">
-              <h3 class="ta-subtitle support-color">Stod (Support)</h3>
+              <h3 class="ta-subtitle support-color">Stöd (Support)</h3>
               <ul id="detail-support-list" class="levels-list"></ul>
             </div>
             <div class="ta-col">
-              <h3 class="ta-subtitle resist-color">Motstand (Resistance)</h3>
+              <h3 class="ta-subtitle resist-color">Motstånd (Resistance)</h3>
               <ul id="detail-resistance-list" class="levels-list"></ul>
             </div>
           </div>
@@ -268,7 +272,7 @@
               <span id="detail-eps" class="value">--</span>
             </div>
             <div class="indicator">
-              <span class="label">Marknadsvarde</span>
+              <span class="label">Marknadsvärde</span>
               <span id="detail-market-cap" class="value">--</span>
             </div>
             <div class="indicator">
@@ -296,22 +300,22 @@
 
         <!-- Disclaimer -->
         <p class="disclaimer">
-          OBS: Detta ar INTE finansiell radgivning. Alla rekommendationer ar baserade pa
-          tekniska indikatorer och offentlig analytikerdata. Gor alltid din egen research (DYOR)
+          OBS: Detta är INTE finansiell rådgivning. Alla rekommendationer är baserade på
+          tekniska indikatorer och offentlig analytikerdata. Gör alltid din egen research (DYOR)
           innan du investerar. Historisk avkastning garanterar inte framtida resultat.
         </p>
       </div>
     </section>
 
-    <!-- ===== DATAKALLOR ===== -->
+    <!-- ===== DATAKÄLLOR ===== -->
     <section class="card" id="stocks-sources-card">
-      <h2>Datakallor &amp; API:er</h2>
+      <h2>Datakällor &amp; API:er</h2>
       <table class="sources-table">
         <thead>
           <tr>
-            <th>Kalla</th>
+            <th>Källa</th>
             <th>Data</th>
-            <th>Grans (gratis)</th>
+            <th>Gräns (gratis)</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -341,7 +345,7 @@
     <!-- ===== FOOTER ===== -->
     <footer>
       <p>
-        Kallor:
+        Källor:
         <a href="https://twelvedata.com" target="_blank" rel="noopener">Twelve Data</a> (kurser &amp; indikatorer),
         <a href="https://finnhub.io" target="_blank" rel="noopener">Finnhub</a> (nyheter) och
         <a href="https://www.alphavantage.co" target="_blank" rel="noopener">Alpha Vantage</a> (fundamental data)
@@ -351,13 +355,13 @@
 
     <!-- ===== DISCLAIMER ===== -->
     <p class="disclaimer" style="margin-top: 16px;">
-      OBS: Detta ar INTE finansiell radgivning. Rekommendationerna ar baserade pa tekniska indikatorer
-      och offentligt tillganglig analytikerdata. Alla investeringar innebar risk och historisk avkastning
-      ar ingen garanti for framtida resultat. Gor alltid din egen research (DYOR) innan du investerar.
-      Investera aldrig mer an du har rad att forlora.
+      OBS: Detta är INTE finansiell rådgivning. Rekommendationerna är baserade på tekniska indikatorer
+      och offentligt tillgänglig analytikerdata. Alla investeringar innebär risk och historisk avkastning
+      är ingen garanti för framtida resultat. Gör alltid din egen research (DYOR) innan du investerar.
+      Investera aldrig mer än du har råd att förlora.
     </p>
   </div>
 
-  <script src="stocks.js"></script>
+  <script src="stocks.js?v=4"></script>
 </body>
 </html>

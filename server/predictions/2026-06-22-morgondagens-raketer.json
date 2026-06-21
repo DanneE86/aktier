@@ -1,0 +1,73 @@
+{
+  "title": "Morgondagens raketer",
+  "prediction_date": "2026-06-21",
+  "target_date": "2026-06-22",
+  "target_day": "Monday",
+  "generated_at": "2026-06-21T09:41:00.984Z",
+  "scanner_universe": 2245,
+  "filters": {
+    "min_rocket_score": 65,
+    "max_picks": 3,
+    "excluded_pump_count": 39,
+    "below_threshold_count": 1069
+  },
+  "rockets": [
+    {
+      "ticker": "QXL",
+      "name": "Quantum X Labs Inc.",
+      "price_at_prediction": 6.35,
+      "change_today": 12.989325,
+      "rocket_score": 75,
+      "volume": 385041,
+      "relative_volume": 5.163691713492564,
+      "confidence_score": 50,
+      "risk_score": 2,
+      "scanner_type": "momentum",
+      "trigger_reason": "+13.0% | Vol: 385K | 5.2x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
+      "risk_flags": [],
+      "result": null,
+      "target_20pct": 7.62,
+      "stop_loss_8pct": 5.84
+    },
+    {
+      "ticker": "LIXT",
+      "name": "Lixte Biotechnology Holdings, I",
+      "price_at_prediction": 7.61,
+      "change_today": 9.339082,
+      "rocket_score": 75,
+      "volume": 1007714,
+      "relative_volume": 6.35032485332762,
+      "confidence_score": 48,
+      "risk_score": 2,
+      "scanner_type": "momentum",
+      "trigger_reason": "+9.3% | Vol: 1.0M | 6.4x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
+      "risk_flags": [],
+      "result": null,
+      "target_20pct": 9.13,
+      "stop_loss_8pct": 7
+    },
+    {
+      "ticker": "MFI",
+      "name": "mF International Limited",
+      "price_at_prediction": 9.875,
+      "change_today": 25.636131,
+      "rocket_score": 70,
+      "volume": 67622,
+      "relative_volume": 5.253418272218769,
+      "confidence_score": 60,
+      "risk_score": 2,
+      "scanner_type": "momentum",
+      "trigger_reason": "+25.6% | Vol: 68K | 5.3x snittvolym | $5-$10",
+      "risk_flags": [],
+      "result": null,
+      "target_20pct": 11.85,
+      "stop_loss_8pct": 9.09
+    }
+  ],
+  "verification": {
+    "check_date": "2026-06-22",
+    "check_time": "16:00 ET (market close)",
+    "success_criteria": "+20% fran price_at_prediction = raket träffad. Under -8% = stop-loss.",
+    "result": null
+  }
+}
