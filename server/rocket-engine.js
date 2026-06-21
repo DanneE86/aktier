@@ -1,7 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const db = require("./db");
-const { fetchYahooQuotes } = require("./yahoo-auth");
+const { fetchYahooClosesOnDate } = require("./yahoo-auth");
+const { canVerifyTargetDate, isRocketResultReady } = require("./market-utils");
 
 const PREDICTIONS_DIR = path.join(__dirname, "predictions");
 const ROCKETS_DB = path.join(PREDICTIONS_DIR, "rockets.json");
@@ -193,32 +194,37 @@ async function verifyRockets(predictionDate) {
   const pred = rdb.predictions.find(p => p.prediction_date === predictionDate);
   if (!pred) return null;
 
+  const marketCheck = canVerifyTargetDate(pred.target_date);
+  if (!marketCheck.ok) {
+    throw new Error(marketCheck.reason);
+  }
+
   const tickers = pred.rockets.map(r => r.ticker);
 
   try {
-    const quotes = await fetchYahooQuotes(tickers);
-    if (quotes.length === 0) {
-      throw new Error("Kunde inte hamta kurser fran Yahoo Finance");
+    const closes = await fetchYahooClosesOnDate(tickers, pred.target_date);
+    if (Object.keys(closes).length === 0) {
+      throw new Error("Kunde inte hamta stangningskurser for " + pred.target_date);
     }
 
     for (const rocket of pred.rockets) {
-      const q = quotes.find(qq => qq.symbol === rocket.ticker);
-      if (!q) continue;
-      const currentPrice = q.regularMarketPrice;
-      if (!currentPrice) continue;
+      const closePrice = closes[rocket.ticker];
+      if (closePrice == null) continue;
 
-      const changePct = ((currentPrice - rocket.price_at_prediction) / rocket.price_at_prediction) * 100;
+      const changePct = ((closePrice - rocket.price_at_prediction) / rocket.price_at_prediction) * 100;
       rocket.result = {
         verified_at: new Date().toISOString(),
-        current_price: currentPrice,
+        target_date: pred.target_date,
+        current_price: closePrice,
         change_pct: Math.round(changePct * 100) / 100,
         was_correct: changePct > 0,
         hit_20pct: changePct >= 20,
         hit_stop_loss: changePct <= -8,
+        status: "verified",
       };
     }
 
-    const verified = pred.rockets.filter(r => r.result);
+    const verified = pred.rockets.filter(r => r.result && r.result.status === "verified");
     if (verified.length === 0) {
       throw new Error("Inga tickers kunde verifieras – kontrollera symboler");
     }
@@ -260,16 +266,33 @@ async function verifyRockets(predictionDate) {
   }
 }
 
+function sanitizePrediction(pred) {
+  if (!pred) return pred;
+  const check = canVerifyTargetDate(pred.target_date);
+  if (check.ok) return pred;
+
+  const copy = { ...pred, rockets: pred.rockets.map(r => ({ ...r })) };
+  copy.verification_pending = true;
+  copy.verification_message = check.reason;
+  copy.rockets.forEach(r => {
+    if (r.result && !isRocketResultReady(pred, r)) r.result = null;
+  });
+  if (copy.verification_pending) copy.summary = null;
+  return copy;
+}
+
 function getRockets(date) {
   const rdb = readRocketsDb();
-  return rdb.predictions.find(p => p.prediction_date === date) || null;
+  const pred = rdb.predictions.find(p => p.prediction_date === date) || null;
+  return sanitizePrediction(pred);
 }
 
 function getRocketHistory() {
   const rdb = readRocketsDb();
   return rdb.predictions
     .sort((a, b) => b.prediction_date.localeCompare(a.prediction_date))
-    .slice(0, 30);
+    .slice(0, 30)
+    .map(sanitizePrediction);
 }
 
 function safeJsonParse(str) { try { return JSON.parse(str); } catch { return []; } }
@@ -374,7 +397,22 @@ function getYesterdayRocketTips() {
       if (!latest || snap.prediction_date > latest.prediction_date) latest = snap;
     }
   }
-  return latest;
+  if (!latest) return null;
+
+  const sanitized = sanitizePrediction({
+    prediction_date: latest.prediction_date,
+    target_date: latest.target_date,
+    rockets: latest.rockets,
+    summary: latest.verification?.result || null,
+    verification: latest.verification,
+  });
+  return {
+    ...latest,
+    rockets: sanitized.rockets,
+    verification: sanitized.verification_pending ? null : latest.verification,
+    verification_pending: sanitized.verification_pending,
+    verification_message: sanitized.verification_message,
+  };
 }
 
 module.exports = {
@@ -387,6 +425,7 @@ module.exports = {
   saveRocketSnapshot,
   readRocketSnapshot,
   getYesterdayRocketTips,
+  sanitizePrediction,
   MIN_ROCKET_SCORE,
   DEFAULT_ROCKET_COUNT,
 };

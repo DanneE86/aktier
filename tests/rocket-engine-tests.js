@@ -7,6 +7,7 @@ const {
   isPumpFlagged,
   MIN_ROCKET_SCORE,
 } = require("../server/rocket-engine");
+const { canVerifyTargetDate, isWeekendDate } = require("../server/market-utils");
 
 let passed = 0;
 let failed = 0;
@@ -66,6 +67,16 @@ const qxlScore = scoreForRocket(qxl);
 
 assert(apwcScore < MIN_ROCKET_SCORE, "APWC score under tröskel (" + apwcScore + " < " + MIN_ROCKET_SCORE + ")");
 assert(qxlScore >= MIN_ROCKET_SCORE, "QXL score over tröskel (" + qxlScore + " >= " + MIN_ROCKET_SCORE + ")");
+
+assert(isWeekendDate("2026-06-21"), "2026-06-21 ar sondag");
+assert(isWeekendDate("2026-06-20"), "2026-06-20 ar lordag");
+assert(!isWeekendDate("2026-06-19"), "2026-06-19 ar fredag");
+
+const weekendCheck = canVerifyTargetDate("2026-06-22", new Date("2026-06-21T15:00:00Z"));
+assert(!weekendCheck.ok, "Kan inte verifiera mandag under helgen: " + weekendCheck.reason);
+
+const fridayCheck = canVerifyTargetDate("2026-06-19", new Date("2026-06-21T15:00:00Z"));
+assert(fridayCheck.ok, "Fredag ska kunna verifieras pa sondag");
 
 console.log("\n" + passed + " passed, " + failed + " failed");
 process.exit(failed > 0 ? 1 : 0);

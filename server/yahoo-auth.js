@@ -47,6 +47,45 @@ async function yahooFetchJson(url) {
   return res.json();
 }
 
+const { timestampToDateET } = require("./market-utils");
+
+/** Stängningskurs på en specifik handelsdag (ET). */
+async function fetchYahooCloseOnDate(ticker, dateStr) {
+  const start = Math.floor(new Date(dateStr + "T05:00:00-05:00").getTime() / 1000) - 86400 * 14;
+  const end = Math.floor(new Date(dateStr + "T23:59:59-05:00").getTime() / 1000) + 86400;
+  const chartUrl =
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}` +
+    `?interval=1d&period1=${start}&period2=${end}`;
+  const data = await yahooFetchJson(chartUrl);
+  const result = data?.chart?.result?.[0];
+  if (!result) return null;
+
+  const timestamps = result.timestamp || [];
+  const closes = result.indicators?.quote?.[0]?.close || [];
+
+  for (let i = timestamps.length - 1; i >= 0; i--) {
+    if (timestampToDateET(timestamps[i]) === dateStr && closes[i] != null) {
+      return closes[i];
+    }
+  }
+  return null;
+}
+
+/** Hämta stängningskurser för flera tickers på samma dag. */
+async function fetchYahooClosesOnDate(tickers, dateStr) {
+  const unique = [...new Set(tickers.filter(Boolean))];
+  const closes = {};
+  await Promise.all(unique.map(async ticker => {
+    try {
+      const price = await fetchYahooCloseOnDate(ticker, dateStr);
+      if (price != null) closes[ticker] = price;
+    } catch (e) {
+      console.warn(`[Yahoo Close] ${ticker} ${dateStr}:`, e.message);
+    }
+  }));
+  return closes;
+}
+
 /** Hämta kurser för tickers – batch quote med fallback till chart per ticker. */
 async function fetchYahooQuotes(tickers) {
   const unique = [...new Set(tickers.filter(Boolean))];
@@ -78,4 +117,10 @@ async function fetchYahooQuotes(tickers) {
   return quotes;
 }
 
-module.exports = { yahooFetchJson, fetchYahooQuotes, getYahooAuth };
+module.exports = {
+  yahooFetchJson,
+  fetchYahooQuotes,
+  fetchYahooCloseOnDate,
+  fetchYahooClosesOnDate,
+  getYahooAuth,
+};

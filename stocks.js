@@ -1412,6 +1412,41 @@ async function verifyRockets(date) {
   }
 }
 
+function formatDateET(date) {
+  return date.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+}
+
+function isWeekendDateStr(dateStr) {
+  var d = new Date(dateStr + "T12:00:00Z");
+  var day = d.getUTCDay();
+  return day === 0 || day === 6;
+}
+
+function canVerifyTargetDateClient(targetDate) {
+  if (!targetDate) return { ok: false, reason: "Saknar målhandelsdag" };
+  if (isWeekendDateStr(targetDate)) {
+    return { ok: false, reason: targetDate + " är en helg – börsen är stängd" };
+  }
+  var now = new Date();
+  var todayET = formatDateET(now);
+  var hourET = Number(now.toLocaleString("en-US", { timeZone: "America/New_York", hour: "2-digit", hour12: false }));
+  var minuteET = Number(now.toLocaleString("en-US", { timeZone: "America/New_York", minute: "2-digit" }));
+  var minutes = hourET * 60 + minuteET;
+  if (targetDate > todayET) {
+    return { ok: false, reason: "Målhandelsdag " + targetDate + " har inte stängt än – börsen är stängd" };
+  }
+  if (targetDate === todayET && minutes < 16 * 60) {
+    return { ok: false, reason: "Börsen är öppen – verifiera efter stängning 16:00 ET" };
+  }
+  return { ok: true };
+}
+
+function isRocketResultVisible(targetDate, result) {
+  if (!result || !targetDate) return false;
+  if (result.status === "pending" || result.status === "market_closed") return false;
+  return canVerifyTargetDateClient(targetDate).ok;
+}
+
 function createRocketExpandable(titleText, metaText, defaultOpen) {
   const details = el("details", "rocket-expandable card");
   if (defaultOpen) details.open = true;
@@ -1526,12 +1561,17 @@ function renderYesterdayRocketSection(section) {
   expand.details.classList.add("rocket-yesterday-section");
   section.appendChild(expand.details);
 
-  const hasVerified = y.verification && y.verification.result;
+  const hasVerified = y.verification && y.verification.result && !y.verification_pending;
   if (hasVerified) {
     const sum = y.verification.result;
     const rockets20 = sum.rockets_20pct != null ? sum.rockets_20pct : 0;
     const badge = el("span", "rocket-expandable-badge");
     badge.textContent = rockets20 + " raket +20% · Snitt " + (sum.avg_change >= 0 ? "+" : "") + sum.avg_change + "%";
+    expand.actions.appendChild(badge);
+  } else if (y.verification_pending || !canVerifyTargetDateClient(y.target_date).ok) {
+    const badge = el("span", "rocket-expandable-badge");
+    badge.style.cssText = "background:rgba(139,145,171,0.12);color:#8b91ab;border-color:rgba(139,145,171,0.3)";
+    badge.textContent = "Börsen stängd";
     expand.actions.appendChild(badge);
   } else {
     const verifyBtn = el("button", "stock-card-detail-btn");
@@ -1546,12 +1586,19 @@ function renderYesterdayRocketSection(section) {
     expand.actions.appendChild(verifyBtn);
   }
 
+  if (y.verification_message || !canVerifyTargetDateClient(y.target_date).ok) {
+    const waitMsg = el("p", "stock-card-sector");
+    waitMsg.style.cssText = "margin:0 4px 8px;font-size:0.82rem;color:#8b91ab";
+    waitMsg.textContent = y.verification_message || canVerifyTargetDateClient(y.target_date).reason;
+    expand.body.appendChild(waitMsg);
+  }
+
   y.rockets.forEach(function(rocket, i) {
-    expand.body.appendChild(renderRocketCard(rocket, i + 1, true));
+    expand.body.appendChild(renderRocketCard(rocket, i + 1, true, y.target_date));
   });
 }
 
-function renderRocketCard(rocket, rank, isYesterday) {
+function renderRocketCard(rocket, rank, isYesterday, targetDate) {
   const riskScore = rocket.risk_score || 3;
   const borderClass = riskScore <= 2 ? "stock-card-buy" : riskScore <= 3 ? "stock-card-hold" : "stock-card-sell";
   const card = el("div", "stock-card card " + borderClass);
@@ -1641,25 +1688,25 @@ function renderRocketCard(rocket, rank, isYesterday) {
     card.appendChild(flagsRow);
   }
 
-  // Result if verified
-  if (rocket.result) {
+  // Result if verified (inte under helg / fore malhandelsdag)
+  if (isRocketResultVisible(targetDate, rocket.result)) {
     const resRow = el("div", "");
     const r = rocket.result;
     let label, bg, color;
     if (r.hit_20pct) {
-      label = "RAKET +20% · " + (r.change_pct >= 0 ? "+" : "") + r.change_pct.toFixed(1) + "% · Nu: $" + r.current_price.toFixed(2);
+      label = "RAKET +20% · " + (r.change_pct >= 0 ? "+" : "") + r.change_pct.toFixed(1) + "% · Stang: $" + r.current_price.toFixed(2);
       bg = "rgba(244,211,94,0.15);border:1px solid rgba(244,211,94,0.4)";
       color = "#f4d35e";
     } else if (r.hit_stop_loss) {
-      label = "STOP-LOSS · " + r.change_pct.toFixed(1) + "% · Nu: $" + r.current_price.toFixed(2);
+      label = "STOP-LOSS · " + r.change_pct.toFixed(1) + "% · Stang: $" + r.current_price.toFixed(2);
       bg = "rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3)";
       color = "#ff6f61";
     } else if (r.was_correct) {
-      label = "UPP · +" + r.change_pct.toFixed(1) + "% · Nu: $" + r.current_price.toFixed(2);
+      label = "UPP · +" + r.change_pct.toFixed(1) + "% · Stang: $" + r.current_price.toFixed(2);
       bg = "rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3)";
       color = "#2ecc71";
     } else {
-      label = "NED · " + r.change_pct.toFixed(1) + "% · Nu: $" + r.current_price.toFixed(2);
+      label = "NED · " + r.change_pct.toFixed(1) + "% · Stang: $" + r.current_price.toFixed(2);
       bg = "rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3)";
       color = "#ff6f61";
     }
@@ -1669,6 +1716,11 @@ function renderRocketCard(rocket, rank, isYesterday) {
     resText.textContent = label;
     resRow.appendChild(resText);
     card.appendChild(resRow);
+  } else if (targetDate && !canVerifyTargetDateClient(targetDate).ok) {
+    const pending = el("p", "stock-card-sector");
+    pending.style.cssText = "margin-top:8px;font-size:0.8rem;color:#8b91ab";
+    pending.textContent = canVerifyTargetDateClient(targetDate).reason;
+    card.appendChild(pending);
   } else if (isYesterday && rocket.target_20pct != null) {
     const pending = el("p", "stock-card-sector");
     pending.style.cssText = "margin-top:8px;font-size:0.8rem";
@@ -1686,11 +1738,16 @@ function renderRocketHistoryCard(pred) {
   const expand = createRocketExpandable(pred.prediction_date, summaryMeta, false);
   expand.details.classList.add("rocket-history-item");
 
-  if (pred.summary) {
+  if (pred.summary && !pred.verification_pending && canVerifyTargetDateClient(pred.target_date).ok) {
     const rate = pred.summary.hit_rate;
     const badge = el("span", "rocket-expandable-badge");
     badge.style.color = rate >= 60 ? "#2ecc71" : rate >= 40 ? "#f4d35e" : "#ff6f61";
     badge.textContent = rate + "% ratt · Snitt " + (pred.summary.avg_change >= 0 ? "+" : "") + pred.summary.avg_change + "%";
+    expand.actions.appendChild(badge);
+  } else if (pred.verification_pending || !canVerifyTargetDateClient(pred.target_date).ok) {
+    const badge = el("span", "rocket-expandable-badge");
+    badge.style.cssText = "background:rgba(139,145,171,0.12);color:#8b91ab;border-color:rgba(139,145,171,0.3)";
+    badge.textContent = "Börsen stängd";
     expand.actions.appendChild(badge);
   } else {
     const verifyBtn = el("button", "stock-card-detail-btn");
@@ -1710,7 +1767,7 @@ function renderRocketHistoryCard(pred) {
   expand.body.appendChild(info);
 
   (pred.rockets || []).forEach(function(rocket, i) {
-    expand.body.appendChild(renderRocketCard(rocket, i + 1));
+    expand.body.appendChild(renderRocketCard(rocket, i + 1, false, pred.target_date));
   });
 
   return expand.details;
