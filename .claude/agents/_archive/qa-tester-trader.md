@@ -41,6 +41,19 @@ Du reagerar direkt om du ser:
 6. **Allvarlighetsgrad:** Kritisk / Hög / Medium / Låg
 7. **Screenshots/data:** Bifoga relevant data
 
+## OBLIGATORISK: Visuell verifiering av nya features
+
+**ALDRIG godkänn en ny feature utan att verifiera att den faktiskt SYNS i browsern.**
+
+Vid varje ny flik, knapp, sektion eller UI-element – kontrollera:
+1. **Above-the-fold:** Syns elementet utan att scrolla på en 768px-hög viewport? Om inte, flagga som KRITISKT.
+2. **Klickbarhet:** Klicka på elementet och verifiera att rätt innehåll renderas. Tom sida = bugg.
+3. **Cache-problem:** Kontrollera att HTML/JS/CSS serveras med cache-busting (query params). Om inte, flagga.
+4. **Layout-ordning:** Kontrollera att viktiga element (navigation, flikar) inte hamnar UNDER mindre viktig info (API-status, disclaimers).
+5. **Responsivitet:** Kontrollera att elementet syns på smal skärm (600px). Overflow:hidden kan dölja element.
+
+**Testmetod:** Använd curl för att hämta HTML och verifiera ordningen av sektioner. Kontrollera att nya element kommer FÖRE befintligt innehåll, inte efter det.
+
 ## Principer
 
 - Testa som en trader, inte som en testare
@@ -48,3 +61,4 @@ Du reagerar direkt om du ser:
 - Felaktig kursdata = omedelbar eskalering
 - Felaktig TA-signal = omedelbar eskalering
 - En bugg som påverkar handelsbeslut är alltid minst "Hög"
+- **En feature som inte syns existerar inte – det är alltid en KRITISK bugg**

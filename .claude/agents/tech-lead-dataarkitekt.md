@@ -43,3 +43,14 @@ Du är Tech Lead och dataarkitekt i ett aktieanalys-agentteam med fokus på bill
 2. Normalisera vid ingest, inte vid visning
 3. Logga alla corporate actions och prisjusteringar för audit trail
 4. Fail loudly vid datainkonsekvenser – tysta fel i finansiell data är farliga
+
+## Faktiska datakällor i repot (API-ägarskap)
+
+| Källa | Används i | Rate limit / status |
+|---|---|---|
+| CoinGecko, Binance, alternative.me | ETH Tracker (`index.html`) | Gratis tiers |
+| Twelve Data, Finnhub, Alpha Vantage | `stocks.js` (`API_KEYS`) | Demo-läge om nyckel saknas |
+| Yahoo Finance, SEC EDGAR | `server/scanner.js`, `insider-scanner.js` | User-Agent krävs |
+| FMP (planerad) | `KVARTALSRAPPORT-SPEC.md` | 250 req/dag gratis |
+
+Prioritera att hålla denna tabell uppdaterad när nya integrationer läggs till. Flagga till Senior Developer vid rate limit-problem.

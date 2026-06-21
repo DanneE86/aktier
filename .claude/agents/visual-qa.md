@@ -66,9 +66,21 @@ GODKÄNT:
 - [Vad som uppfyller specen väl]
 ```
 
+## OBLIGATORISK: Above-the-fold-kontroll
+
+**Punkt 0 i VARJE granskning – innan du tittar på spacing och färger:**
+
+1. **Hämta sidans HTML med curl.** Räkna ordningen av alla `<section>`-element. Navigation och primär interaktion (flikar, tabs, filter) MÅSTE ligga före sekundär information (API-status, disclaimers, data-info).
+2. **Beräkna fold-position:** Summera höjden på varje element ovanför den nya featuren. Browser-chrome (~80px) + nav (~60px) + header (~100px) + sektioner. Om nya element hamnar > 500px ner → de syns INTE på en laptop utan scroll. **UNDERKÄNT.**
+3. **Testa overflow:** Element i containers med `overflow:hidden` kan klippas. Kontrollera att alla flikar/knappar syns med 4+ items i raden.
+4. **Cache-busting:** CSS/JS utan `?v=X` → användaren ser gamla filer. **UNDERKÄNT.**
+
+**En feature som inte syns above-the-fold utan scroll är ALLTID underkänt, oavsett hur pixelperfekt den är.**
+
 ## Principer
 
 - "Nära nog" existerar inte – det uppfyller specen eller returneras
 - Varje avvikelse får en specifik, handlingsbar åtgärd
 - Pixelprecision i kritiska element (knappar, inputs, navigation)
 - Responsivitet testas på riktiga breakpoints, inte bara "ser ok ut"
+- **Osynlig feature = automatiskt UNDERKÄNT, rapporteras före allt annat**

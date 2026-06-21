@@ -474,11 +474,9 @@ app.get('/api/sec/xbrl/:cik', async (req, res) => {
 | Agent | Roll i kvartalsrapportanalys |
 |---|---|
 | **Fundamental Research Analyst** | Laser och tolkar MD&A, riskfaktorer, fotnoter |
-| **SEC Filing Monitor** | Flaggar nar ny 10-Q/10-K publiceras |
-| **Data Scientist Kvant** | Beraknar F-Score, Z-Score, trendmodeller |
-| **PO Value Fundamental** | Prioriterar vilka nyckeltal som visas |
-| **Portfolio Watchdog** | Triggar alert om rapport avviker kraftigt |
-| **Senior Dev Finansiell** | Implementerar parsning och berakningar |
+| **Filings & Flow Agent** | Flaggar nar ny 10-Q/10-K publiceras |
+| **PO Produkt Trio (Value)** | Prioriterar vilka nyckeltal som visas |
+| **Senior Developer** | Implementerar parsning och berakningar |
 
 ---
 
