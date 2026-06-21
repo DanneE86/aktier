@@ -21,7 +21,14 @@
           "scanner_type": "momentum",
           "trigger_reason": "+13.0% | Vol: 376K | 5.0x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
           "risk_flags": [],
-          "result": null
+          "result": {
+            "verified_at": "2026-06-21T09:55:02.643Z",
+            "current_price": 6.35,
+            "change_pct": 0,
+            "was_correct": false,
+            "hit_20pct": false,
+            "hit_stop_loss": false
+          }
         },
         {
           "ticker": "MFI",
@@ -36,7 +43,14 @@
           "scanner_type": "momentum",
           "trigger_reason": "+25.6% | Vol: 68K | 5.3x snittvolym | $5-$10",
           "risk_flags": [],
-          "result": null
+          "result": {
+            "verified_at": "2026-06-21T09:55:02.643Z",
+            "current_price": 9.875,
+            "change_pct": 0,
+            "was_correct": false,
+            "hit_20pct": false,
+            "hit_stop_loss": false
+          }
         },
         {
           "ticker": "KFFB",
@@ -53,7 +67,14 @@
           "risk_flags": [
             "Micro-cap (<$50M)"
           ],
-          "result": null
+          "result": {
+            "verified_at": "2026-06-21T09:55:02.643Z",
+            "current_price": 5.1,
+            "change_pct": 0,
+            "was_correct": false,
+            "hit_20pct": false,
+            "hit_stop_loss": false
+          }
         },
         {
           "ticker": "GEG",
@@ -70,7 +91,14 @@
           "risk_flags": [
             "Micro-price ($1-3)"
           ],
-          "result": null
+          "result": {
+            "verified_at": "2026-06-21T09:55:02.643Z",
+            "current_price": 2.76,
+            "change_pct": 0,
+            "was_correct": false,
+            "hit_20pct": false,
+            "hit_stop_loss": false
+          }
         },
         {
           "ticker": "HYPR",
@@ -87,23 +115,31 @@
           "risk_flags": [
             "Micro-price ($1-3)"
           ],
-          "result": null
+          "result": {
+            "verified_at": "2026-06-21T09:55:02.643Z",
+            "current_price": 1.6,
+            "change_pct": 0,
+            "was_correct": false,
+            "hit_20pct": false,
+            "hit_stop_loss": false
+          }
         }
-      ]
+      ],
+      "summary": {
+        "verified_count": 5,
+        "correct_count": 0,
+        "hit_rate": 0,
+        "rockets_20pct": 0,
+        "avg_change": 0
+      }
     },
     {
       "id": "rocket-2026-06-21",
       "prediction_date": "2026-06-21",
       "target_date": "2026-06-22",
-      "generated_at": "2026-06-21T09:41:00.984Z",
+      "generated_at": "2026-06-21T09:49:53.305Z",
       "scanner_universe": 2245,
-      "candidates_scored": 1083,
-      "filters": {
-        "min_rocket_score": 65,
-        "max_picks": 3,
-        "excluded_pump_count": 39,
-        "below_threshold_count": 1069
-      },
+      "candidates_scored": 1122,
       "rockets": [
         {
           "ticker": "QXL",
@@ -118,7 +154,14 @@
           "scanner_type": "momentum",
           "trigger_reason": "+13.0% | Vol: 385K | 5.2x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
           "risk_flags": [],
-          "result": null
+          "result": {
+            "verified_at": "2026-06-21T09:54:33.547Z",
+            "current_price": 6.35,
+            "change_pct": 0,
+            "was_correct": false,
+            "hit_20pct": false,
+            "hit_stop_loss": false
+          }
         },
         {
           "ticker": "LIXT",
@@ -133,7 +176,14 @@
           "scanner_type": "momentum",
           "trigger_reason": "+9.3% | Vol: 1.0M | 6.4x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
           "risk_flags": [],
-          "result": null
+          "result": {
+            "verified_at": "2026-06-21T09:54:33.548Z",
+            "current_price": 7.61,
+            "change_pct": 0,
+            "was_correct": false,
+            "hit_20pct": false,
+            "hit_stop_loss": false
+          }
         },
         {
           "ticker": "MFI",
@@ -148,9 +198,71 @@
           "scanner_type": "momentum",
           "trigger_reason": "+25.6% | Vol: 68K | 5.3x snittvolym | $5-$10",
           "risk_flags": [],
-          "result": null
+          "result": {
+            "verified_at": "2026-06-21T09:54:33.548Z",
+            "current_price": 9.875,
+            "change_pct": 0,
+            "was_correct": false,
+            "hit_20pct": false,
+            "hit_stop_loss": false
+          }
+        },
+        {
+          "ticker": "KFFB",
+          "name": "Kentucky First Federal Bancorp",
+          "price_at_prediction": 5.1,
+          "change_today": 6.694565,
+          "rocket_score": 70,
+          "volume": 22653,
+          "relative_volume": 9.46636021730046,
+          "confidence_score": 43,
+          "risk_score": 3,
+          "scanner_type": "momentum",
+          "trigger_reason": "+6.7% | Vol: 23K | 9.5x snittvolym | Nara 52v-high | $5-$10",
+          "risk_flags": [
+            "Micro-cap (<$50M)"
+          ],
+          "result": {
+            "verified_at": "2026-06-21T09:54:33.548Z",
+            "current_price": 5.1,
+            "change_pct": 0,
+            "was_correct": false,
+            "hit_20pct": false,
+            "hit_stop_loss": false
+          }
+        },
+        {
+          "ticker": "GEG",
+          "name": "Great Elm Group, Inc.",
+          "price_at_prediction": 2.76,
+          "change_today": 20.52402,
+          "rocket_score": 68,
+          "volume": 91190,
+          "relative_volume": 7.5575998673959885,
+          "confidence_score": 65,
+          "risk_score": 3,
+          "scanner_type": "momentum",
+          "trigger_reason": "+20.5% | Vol: 91K | 7.6x snittvolym | $1-$5",
+          "risk_flags": [
+            "Micro-price ($1-3)"
+          ],
+          "result": {
+            "verified_at": "2026-06-21T09:54:33.548Z",
+            "current_price": 2.76,
+            "change_pct": 0,
+            "was_correct": false,
+            "hit_20pct": false,
+            "hit_stop_loss": false
+          }
         }
-      ]
+      ],
+      "summary": {
+        "verified_count": 5,
+        "correct_count": 0,
+        "hit_rate": 0,
+        "rockets_20pct": 0,
+        "avg_change": 0
+      }
     }
   ]
 }

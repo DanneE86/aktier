@@ -130,9 +130,13 @@ app.get("/api/rockets/yesterday", (req, res) => {
 
 app.post("/api/rockets/verify", async (req, res) => {
   const date = req.body.date || new Date(Date.now() - 86400000).toISOString().split("T")[0];
-  const result = await verifyRockets(date);
-  if (!result) return res.status(404).json({ error: "Inga prediktioner for " + date });
-  res.json(result);
+  try {
+    const result = await verifyRockets(date);
+    if (!result) return res.status(404).json({ error: "Inga prediktioner for " + date });
+    res.json(result);
+  } catch (e) {
+    res.status(502).json({ error: e.message || "Verifiering misslyckades" });
+  }
 });
 
 // ── FLOAT & SHORT SQUEEZE API ROUTES ──────────────────────────────

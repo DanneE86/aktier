@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const db = require("./db");
+const { fetchYahooQuotes } = require("./yahoo-auth");
 
 const PREDICTIONS_DIR = path.join(__dirname, "predictions");
 const ROCKETS_DB = path.join(PREDICTIONS_DIR, "rockets.json");
@@ -192,17 +193,13 @@ async function verifyRockets(predictionDate) {
   const pred = rdb.predictions.find(p => p.prediction_date === predictionDate);
   if (!pred) return null;
 
-  const tickers = pred.rockets.map(r => r.ticker).join(",");
+  const tickers = pred.rockets.map(r => r.ticker);
 
   try {
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers}`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const quotes = data?.quoteResponse?.result || [];
+    const quotes = await fetchYahooQuotes(tickers);
+    if (quotes.length === 0) {
+      throw new Error("Kunde inte hamta kurser fran Yahoo Finance");
+    }
 
     for (const rocket of pred.rockets) {
       const q = quotes.find(qq => qq.symbol === rocket.ticker);
@@ -222,6 +219,10 @@ async function verifyRockets(predictionDate) {
     }
 
     const verified = pred.rockets.filter(r => r.result);
+    if (verified.length === 0) {
+      throw new Error("Inga tickers kunde verifieras – kontrollera symboler");
+    }
+
     const correct = verified.filter(r => r.result.was_correct);
     pred.summary = {
       verified_count: verified.length,
@@ -237,6 +238,10 @@ async function verifyRockets(predictionDate) {
 
     const snapshot = readRocketSnapshot(pred.target_date);
     if (snapshot) {
+      snapshot.rockets = snapshot.rockets.map(sr => {
+        const match = pred.rockets.find(r => r.ticker === sr.ticker);
+        return match ? { ...sr, result: match.result || null } : sr;
+      });
       snapshot.verification = {
         ...snapshot.verification,
         verified_at: new Date().toISOString(),
@@ -249,7 +254,9 @@ async function verifyRockets(predictionDate) {
     return pred;
   } catch (e) {
     console.warn("Rocket verification error:", e.message);
-    return pred;
+    const err = new Error(e.message);
+    err.prediction = pred;
+    throw err;
   }
 }
 

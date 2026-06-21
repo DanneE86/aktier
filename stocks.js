@@ -1395,15 +1395,43 @@ async function verifyRockets(date) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date: date }),
-    }, 10000);
-    if (!res.ok) return;
+    }, 15000);
+    if (!res.ok) {
+      var errBody = {};
+      try { errBody = await res.json(); } catch (_) {}
+      showErrorToast(errBody.error || "Verifiering misslyckades (HTTP " + res.status + ")");
+      return;
+    }
     await fetchRocketHistory();
     await fetchYesterdayRockets();
+    await fetchRockets();
     renderStockList();
   } catch (e) {
     console.warn("Rocket verify error:", e.message);
     showErrorToast("Kunde inte verifiera raketer. Backend offline?");
   }
+}
+
+function createRocketExpandable(titleText, metaText, defaultOpen) {
+  const details = el("details", "rocket-expandable card");
+  if (defaultOpen) details.open = true;
+
+  const summary = el("summary", "rocket-expandable-summary");
+  const titleWrap = el("div", "rocket-expandable-title-wrap");
+  titleWrap.appendChild(el("span", "rocket-expandable-title", titleText));
+  if (metaText) {
+    titleWrap.appendChild(el("span", "rocket-expandable-meta", metaText));
+  }
+  summary.appendChild(titleWrap);
+
+  const actions = el("div", "rocket-expandable-actions");
+  summary.appendChild(actions);
+
+  const body = el("div", "rocket-expandable-body");
+  details.appendChild(summary);
+  details.appendChild(body);
+
+  return { details, summary, actions, body };
 }
 
 function renderRocketList(section) {
@@ -1428,16 +1456,18 @@ function renderRocketList(section) {
   headerCard.appendChild(btnRow);
   section.appendChild(headerCard);
 
-  // Gårdagens tips (publicerade igår – för uppföljning)
+  // Gårdagens tips (expanderbar)
   if (yesterdayRocketData && yesterdayRocketData.rockets && yesterdayRocketData.rockets.length > 0) {
     renderYesterdayRocketSection(section);
   }
 
-  // Morgondagens raketer (dagens prediktion)
-  const todayTitle = el("div", "card");
-  todayTitle.style.cssText = "padding:12px 16px;margin-top:8px";
-  todayTitle.appendChild(el("h3", "ta-subtitle", "Morgondagens raketer"));
-  section.appendChild(todayTitle);
+  // Morgondagens raketer (expanderbar)
+  const todayExpand = createRocketExpandable(
+    "Morgondagens raketer",
+    rocketData && rocketData.target_date ? "Mal: " + rocketData.target_date : null,
+    true
+  );
+  section.appendChild(todayExpand.details);
 
   if (!rocketData || !rocketData.rockets || rocketData.rockets.length === 0) {
     var empty = el("div", "card");
@@ -1450,7 +1480,7 @@ function renderRocketList(section) {
       desc.textContent = "Klicka 'Generera nya raketer' efter att scannern har kört.";
     }
     empty.appendChild(desc);
-    section.appendChild(empty);
+    todayExpand.body.appendChild(empty);
   } else {
     const infoCard = el("div", "card");
     infoCard.style.cssText = "padding:16px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px";
@@ -1459,65 +1489,66 @@ function renderRocketList(section) {
     infoCard.appendChild(dateInfo);
     const universeInfo = el("span", "stock-card-sector");
     universeInfo.textContent = "Universum: " + rocketData.scanner_universe + " aktier | Kandidater: " + rocketData.candidates_scored;
+    if (rocketData.filters) {
+      const filterInfo = el("span", "stock-card-sector");
+      filterInfo.textContent = "Pump uteslutna: " + (rocketData.filters.excluded_pump_count || 0);
+      infoCard.appendChild(filterInfo);
+    }
     infoCard.appendChild(universeInfo);
-    section.appendChild(infoCard);
+    todayExpand.body.appendChild(infoCard);
 
     rocketData.rockets.forEach((rocket, i) => {
-      section.appendChild(renderRocketCard(rocket, i + 1));
+      todayExpand.body.appendChild(renderRocketCard(rocket, i + 1));
     });
   }
 
-  // History section
+  // Historik (expanderbar lista)
   if (rocketHistory.length > 0) {
-    const histTitle = el("div", "card");
-    histTitle.style.cssText = "padding:16px;margin-top:16px";
-    histTitle.appendChild(el("h3", "ta-subtitle", "Historik & Resultat"));
-    section.appendChild(histTitle);
+    const histExpand = createRocketExpandable(
+      "Historik & resultat",
+      rocketHistory.length + " dagar",
+      false
+    );
+    section.appendChild(histExpand.details);
 
     rocketHistory.forEach(pred => {
-      section.appendChild(renderRocketHistoryCard(pred));
+      histExpand.body.appendChild(renderRocketHistoryCard(pred));
     });
   }
 }
 
 function renderYesterdayRocketSection(section) {
   const y = yesterdayRocketData;
-  const wrap = el("div", "card rocket-yesterday-section");
-  wrap.style.cssText = "padding:16px;margin-bottom:12px;border:1px solid rgba(109,213,237,0.25);background:rgba(109,213,237,0.04)";
+  const meta = "Publicerade " + y.prediction_date + " · Gäller " + y.target_date +
+    (y.target_day ? " (" + y.target_day + ")" : "") + " · " + y.rockets.length + " st";
 
-  const head = el("div", "");
-  head.style.cssText = "display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:12px";
-  const headText = el("div", "");
-  headText.appendChild(el("h3", "ta-subtitle", "Gårdagens tips"));
-  const meta = el("p", "stock-card-sector");
-  meta.textContent = "Publicerade " + y.prediction_date + " · Gäller " + y.target_date +
-    (y.target_day ? " (" + y.target_day + ")" : "");
-  headText.appendChild(meta);
-  head.appendChild(headText);
+  const expand = createRocketExpandable("Gårdagens tips", meta, true);
+  expand.details.classList.add("rocket-yesterday-section");
+  section.appendChild(expand.details);
 
   const hasVerified = y.verification && y.verification.result;
   if (hasVerified) {
     const sum = y.verification.result;
-    const badge = el("span", "");
     const rockets20 = sum.rockets_20pct != null ? sum.rockets_20pct : 0;
-    badge.style.cssText = "padding:6px 14px;border-radius:999px;font-weight:700;font-size:0.85rem;background:rgba(109,213,237,0.12);color:#6dd5ed;border:1px solid rgba(109,213,237,0.35)";
-    badge.textContent = rockets20 + " raket(er) +20% · Snitt " + (sum.avg_change >= 0 ? "+" : "") + sum.avg_change + "%";
-    head.appendChild(badge);
+    const badge = el("span", "rocket-expandable-badge");
+    badge.textContent = rockets20 + " raket +20% · Snitt " + (sum.avg_change >= 0 ? "+" : "") + sum.avg_change + "%";
+    expand.actions.appendChild(badge);
   } else {
     const verifyBtn = el("button", "stock-card-detail-btn");
-    verifyBtn.textContent = "Verifiera gårdagens resultat";
-    verifyBtn.style.cssText = "width:auto;padding:6px 16px;font-size:0.85rem";
-    verifyBtn.addEventListener("click", function() {
+    verifyBtn.type = "button";
+    verifyBtn.textContent = "Verifiera";
+    verifyBtn.style.cssText = "width:auto;padding:4px 12px;font-size:0.8rem";
+    verifyBtn.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
       verifyRockets(y.prediction_date);
     });
-    head.appendChild(verifyBtn);
+    expand.actions.appendChild(verifyBtn);
   }
-  wrap.appendChild(head);
 
   y.rockets.forEach(function(rocket, i) {
-    wrap.appendChild(renderRocketCard(rocket, i + 1, true));
+    expand.body.appendChild(renderRocketCard(rocket, i + 1, true));
   });
-  section.appendChild(wrap);
 }
 
 function renderRocketCard(rocket, rank, isYesterday) {
@@ -1649,42 +1680,40 @@ function renderRocketCard(rocket, rank, isYesterday) {
 }
 
 function renderRocketHistoryCard(pred) {
-  const card = el("div", "card");
-  card.style.cssText = "padding:16px;margin-bottom:8px";
+  const tickers = (pred.rockets || []).map(r => r.ticker).join(", ");
+  const summaryMeta = (pred.rockets || []).length + " st" + (tickers ? " · " + tickers : "");
 
-  const header = el("div", "");
-  header.style.cssText = "display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px";
-  header.appendChild(el("span", "ta-subtitle", pred.prediction_date));
+  const expand = createRocketExpandable(pred.prediction_date, summaryMeta, false);
+  expand.details.classList.add("rocket-history-item");
 
   if (pred.summary) {
-    const badge = el("span", "");
     const rate = pred.summary.hit_rate;
-    badge.style.cssText = "padding:4px 12px;border-radius:999px;font-weight:700;font-size:0.85rem;" +
-      (rate >= 60 ? "background:rgba(46,204,113,0.15);color:#2ecc71" : rate >= 40 ? "background:rgba(244,211,94,0.15);color:#f4d35e" : "background:rgba(231,76,60,0.15);color:#ff6f61");
-    badge.textContent = rate + "% ratt | Snitt: " + (pred.summary.avg_change >= 0 ? "+" : "") + pred.summary.avg_change + "%";
-    header.appendChild(badge);
+    const badge = el("span", "rocket-expandable-badge");
+    badge.style.color = rate >= 60 ? "#2ecc71" : rate >= 40 ? "#f4d35e" : "#ff6f61";
+    badge.textContent = rate + "% ratt · Snitt " + (pred.summary.avg_change >= 0 ? "+" : "") + pred.summary.avg_change + "%";
+    expand.actions.appendChild(badge);
   } else {
     const verifyBtn = el("button", "stock-card-detail-btn");
-    verifyBtn.textContent = "Verifiera resultat";
+    verifyBtn.type = "button";
+    verifyBtn.textContent = "Verifiera";
     verifyBtn.style.cssText = "width:auto;padding:4px 12px;font-size:0.8rem";
-    verifyBtn.addEventListener("click", () => verifyRockets(pred.prediction_date));
-    header.appendChild(verifyBtn);
+    verifyBtn.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      verifyRockets(pred.prediction_date);
+    });
+    expand.actions.appendChild(verifyBtn);
   }
-  card.appendChild(header);
 
-  const tickerRow = el("div", "");
-  tickerRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap";
-  (pred.rockets || []).forEach(r => {
-    const chip = el("span", "");
-    const hasResult = r.result;
-    const color = !hasResult ? "#6dd5ed" : r.result.was_correct ? "#2ecc71" : "#ff6f61";
-    chip.style.cssText = "padding:4px 10px;border-radius:6px;font-size:0.8rem;font-weight:600;border:1px solid " + color + ";color:" + color + ";background:" + color + "15";
-    chip.textContent = r.ticker + (hasResult ? " " + (r.result.change_pct >= 0 ? "+" : "") + r.result.change_pct.toFixed(1) + "%" : "");
-    tickerRow.appendChild(chip);
+  const info = el("p", "stock-card-sector");
+  info.textContent = "Maldag: " + (pred.target_date || "--") + " · Universum: " + (pred.scanner_universe || "--");
+  expand.body.appendChild(info);
+
+  (pred.rockets || []).forEach(function(rocket, i) {
+    expand.body.appendChild(renderRocketCard(rocket, i + 1));
   });
-  card.appendChild(tickerRow);
 
-  return card;
+  return expand.details;
 }
 
 function formatLargeNumber(n) {

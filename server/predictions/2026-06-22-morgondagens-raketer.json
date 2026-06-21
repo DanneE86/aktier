@@ -25,7 +25,14 @@
       "scanner_type": "momentum",
       "trigger_reason": "+13.0% | Vol: 385K | 5.2x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
       "risk_flags": [],
-      "result": null,
+      "result": {
+        "verified_at": "2026-06-21T09:55:02.643Z",
+        "current_price": 6.35,
+        "change_pct": 0,
+        "was_correct": false,
+        "hit_20pct": false,
+        "hit_stop_loss": false
+      },
       "target_20pct": 7.62,
       "stop_loss_8pct": 5.84
     },
@@ -42,7 +49,14 @@
       "scanner_type": "momentum",
       "trigger_reason": "+9.3% | Vol: 1.0M | 6.4x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
       "risk_flags": [],
-      "result": null,
+      "result": {
+        "verified_at": "2026-06-21T09:54:33.548Z",
+        "current_price": 7.61,
+        "change_pct": 0,
+        "was_correct": false,
+        "hit_20pct": false,
+        "hit_stop_loss": false
+      },
       "target_20pct": 9.13,
       "stop_loss_8pct": 7
     },
@@ -59,7 +73,14 @@
       "scanner_type": "momentum",
       "trigger_reason": "+25.6% | Vol: 68K | 5.3x snittvolym | $5-$10",
       "risk_flags": [],
-      "result": null,
+      "result": {
+        "verified_at": "2026-06-21T09:55:02.643Z",
+        "current_price": 9.875,
+        "change_pct": 0,
+        "was_correct": false,
+        "hit_20pct": false,
+        "hit_stop_loss": false
+      },
       "target_20pct": 11.85,
       "stop_loss_8pct": 9.09
     }
@@ -68,6 +89,70 @@
     "check_date": "2026-06-22",
     "check_time": "16:00 ET (market close)",
     "success_criteria": "+20% fran price_at_prediction = raket träffad. Under -8% = stop-loss.",
-    "result": null
+    "result": {
+      "verified_count": 5,
+      "correct_count": 0,
+      "hit_rate": 0,
+      "rockets_20pct": 0,
+      "avg_change": 0
+    },
+    "verified_at": "2026-06-21T09:55:02.644Z",
+    "rockets": [
+      {
+        "ticker": "QXL",
+        "result": {
+          "verified_at": "2026-06-21T09:55:02.643Z",
+          "current_price": 6.35,
+          "change_pct": 0,
+          "was_correct": false,
+          "hit_20pct": false,
+          "hit_stop_loss": false
+        }
+      },
+      {
+        "ticker": "MFI",
+        "result": {
+          "verified_at": "2026-06-21T09:55:02.643Z",
+          "current_price": 9.875,
+          "change_pct": 0,
+          "was_correct": false,
+          "hit_20pct": false,
+          "hit_stop_loss": false
+        }
+      },
+      {
+        "ticker": "KFFB",
+        "result": {
+          "verified_at": "2026-06-21T09:55:02.643Z",
+          "current_price": 5.1,
+          "change_pct": 0,
+          "was_correct": false,
+          "hit_20pct": false,
+          "hit_stop_loss": false
+        }
+      },
+      {
+        "ticker": "GEG",
+        "result": {
+          "verified_at": "2026-06-21T09:55:02.643Z",
+          "current_price": 2.76,
+          "change_pct": 0,
+          "was_correct": false,
+          "hit_20pct": false,
+          "hit_stop_loss": false
+        }
+      },
+      {
+        "ticker": "HYPR",
+        "result": {
+          "verified_at": "2026-06-21T09:55:02.643Z",
+          "current_price": 1.6,
+          "change_pct": 0,
+          "was_correct": false,
+          "hit_20pct": false,
+          "hit_stop_loss": false
+        }
+      }
+    ]
   }
 }

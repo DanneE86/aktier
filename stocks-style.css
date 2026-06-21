@@ -52,6 +52,17 @@
   color: #6dd5ed;
 }
 
+.stock-tab[data-horizon="rockets"] {
+  color: #f4d35e;
+}
+.stock-tab[data-horizon="rockets"]:hover {
+  background: rgba(244, 211, 94, 0.08);
+}
+.stock-tab[data-horizon="rockets"].stock-tab-active {
+  background: rgba(244, 211, 94, 0.15);
+  color: #f4d35e;
+}
+
 /* -- Filter ----------------------------------------------------- */
 
 .stock-filters {
@@ -271,6 +282,20 @@
 .risk-dot-filled-medium {
   background: #f4d35e;
   border-color: #f1c40f;
+}
+
+.risk-shield {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(46, 204, 113, 0.2);
+  color: #4ce081;
+  font-size: 0.7rem;
+  font-weight: 800;
+  border: 1px solid #2ecc71;
 }
 
 /* Motivering */
@@ -579,4 +604,105 @@
 @keyframes loadingPulse {
   0%, 100% { opacity: 0.4; }
   50%      { opacity: 1; }
+}
+
+/* -- Expanderbara raketsektioner -------------------------------- */
+
+.rocket-expandable {
+  margin-bottom: 10px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rocket-expandable-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.rocket-expandable-summary::-webkit-details-marker {
+  display: none;
+}
+
+.rocket-expandable-summary::before {
+  content: "▸";
+  flex-shrink: 0;
+  margin-right: 10px;
+  color: #f4d35e;
+  font-size: 0.9rem;
+  transition: transform 0.2s ease;
+}
+
+.rocket-expandable[open] > .rocket-expandable-summary::before {
+  transform: rotate(90deg);
+}
+
+.rocket-expandable-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rocket-expandable-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e8eaf0;
+}
+
+.rocket-expandable-meta {
+  font-size: 0.78rem;
+  color: #8b91ab;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rocket-expandable-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rocket-expandable-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(244, 211, 94, 0.12);
+  color: #f4d35e;
+  border: 1px solid rgba(244, 211, 94, 0.25);
+  white-space: nowrap;
+}
+
+.rocket-expandable-body {
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rocket-yesterday-section {
+  border-color: rgba(109, 213, 237, 0.3);
+  background: rgba(109, 213, 237, 0.04);
+}
+
+.rocket-yesterday-section .rocket-expandable-title {
+  color: #6dd5ed;
+}
+
+.rocket-history-item {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rocket-history-item .rocket-expandable-body .stock-card {
+  margin-bottom: 0;
 }
