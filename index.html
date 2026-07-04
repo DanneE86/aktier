@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0f1117">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Aktier">
-  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="stylesheet" href="style.css?v=8">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 </head>
@@ -62,11 +62,16 @@
 
       <div class="vol-quick-box" id="vol-quick-box">
         <div class="vol-quick-header">
-          <span class="vol-quick-title">Handelsvolym 24h</span>
+          <div>
+            <span class="vol-quick-title">Hur mycket handlas ETH?</span>
+            <span class="vol-quick-subtitle">Alla köp och sälj senaste 24 timmarna</span>
+          </div>
           <span id="vol-quick-badge" class="vol-badge vol-unknown">–</span>
         </div>
         <div id="vol-quick-value" class="vol-quick-value">–</div>
-        <p id="vol-quick-detail" class="vol-quick-detail">Laddar volymdata…</p>
+        <p class="vol-quick-unit">totalt handlat idag (i dollar)</p>
+        <p id="vol-quick-compare" class="vol-quick-compare">Räknar ut om handeln är låg, normal eller hög…</p>
+        <p id="vol-quick-detail" class="vol-quick-detail">Laddar…</p>
       </div>
     </section>
 
@@ -78,7 +83,7 @@
           <span id="market-cap" class="value">–</span>
         </div>
         <div class="indicator">
-          <span class="label">Volym 24h</span>
+          <span class="label">Handel idag (24h)</span>
           <span id="volume-24h" class="value">–</span>
         </div>
         <div class="indicator">
@@ -101,28 +106,29 @@
     </section>
 
     <section id="volume-card" class="card">
-      <h2>Volymanalys <span class="ta-badge">TA</span></h2>
+      <h2>Volym – förklarat enkelt</h2>
+      <p class="vol-card-intro">Volym = hur mycket ETH som köpts och sålts. Ju mer handel, desto mer meningsfull är en prisrörelse.</p>
       <div class="vol-header">
         <span id="vol-level-badge" class="vol-badge vol-unknown">–</span>
         <span id="vol-rvol-summary" class="vol-rvol-summary">–</span>
       </div>
       <div class="indicators">
         <div class="indicator">
-          <span class="label">Relativ volym (RVOL 20d)</span>
+          <span class="label">Idag vs snitt (20 dagar)</span>
           <span id="vol-rvol-value" class="value">–</span>
         </div>
         <div class="indicator">
-          <span class="label">7d-avvikelse</span>
+          <span class="label">Senaste veckan</span>
           <span id="vol-7d-trend" class="value">–</span>
         </div>
         <div class="indicator">
-          <span class="label">Prisriktning (24h)</span>
+          <span class="label">Vad gör priset?</span>
           <span id="vol-direction" class="value">–</span>
         </div>
       </div>
-      <p id="vol-insight" class="vol-insight">Laddar volymanalys…</p>
+      <p id="vol-insight" class="vol-insight">Laddar…</p>
       <p id="vol-tendency" class="vol-tendency"></p>
-      <p class="vol-help">RVOL = dagens volym ÷ 20-dagars snitt. Hög volym bekräftar prisrörelser; låg volym ökar fakeout-risk.</p>
+      <p class="vol-help">Enklare sagt: handlas det mycket idag jämfört med en vanlig dag? Mycket handel + stigande pris = starkare köpsignal. Lite handel + stigande pris = kan vara en bluff.</p>
     </section>
 
     <section id="supply-card" class="card">
@@ -455,7 +461,7 @@
             <span id="ma200" class="value">–</span>
           </div>
           <div class="indicator">
-            <span class="label">Volymbekräftelse</span>
+            <span class="label">Tillräckligt mycket handel?</span>
             <span id="vol-confirm" class="value">–</span>
           </div>
         </div>
@@ -570,7 +576,7 @@
           <span id="bb-lower" class="value">–</span>
         </div>
         <div class="indicator">
-          <span class="label">Volymtrend</span>
+          <span class="label">Handel vs veckosnitt</span>
           <span id="volume-trend" class="value">–</span>
         </div>
       </div>
@@ -608,6 +614,6 @@
     </footer>
   </div>
 
-  <script src="script.js?v=7"></script>
+  <script src="script.js?v=8"></script>
 </body>
 </html>

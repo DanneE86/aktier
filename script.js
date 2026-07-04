@@ -82,6 +82,7 @@ const els = {
   volQuickBadge:    document.getElementById("vol-quick-badge"),
   volQuickValue:    document.getElementById("vol-quick-value"),
   volQuickDetail:   document.getElementById("vol-quick-detail"),
+  volQuickCompare:  document.getElementById("vol-quick-compare"),
   priceSourceNote:  document.getElementById("price-source-note"),
   // ETH vs Marknaden (Korrelation)
   ethbtcRatio:      document.getElementById("ethbtc-ratio"),
@@ -153,21 +154,60 @@ function computeVolTrend7(volumes) {
 
 function classifyVolume(rvol) {
   if (rvol == null || isNaN(rvol)) {
-    return { level: "unknown", label: "–", cssClass: "vol-unknown", signalScore: 0, confirmsBreakout: false };
+    return {
+      level: "unknown", label: "–", plainLabel: "Väntar på data", shortHint: "",
+      cssClass: "vol-unknown", signalScore: 0, confirmsBreakout: false,
+    };
   }
   if (rvol >= 4.0) {
-    return { level: "extreme", label: "Extrem", cssClass: "vol-extreme", signalScore: 0, confirmsBreakout: true };
+    return {
+      level: "extreme", label: "Extrem", plainLabel: "Extremt hög volym",
+      shortHint: "Ovanligt mycket handel – något stort kan vara på gång",
+      cssClass: "vol-extreme", signalScore: 0, confirmsBreakout: true,
+    };
   }
   if (rvol >= 2.0) {
-    return { level: "high", label: "Hög", cssClass: "vol-high", signalScore: 2, confirmsBreakout: true };
+    return {
+      level: "high", label: "Hög", plainLabel: "Hög volym",
+      shortHint: "Mycket mer handel än vanligt – prisrörelsen är mer trovärdig",
+      cssClass: "vol-high", signalScore: 2, confirmsBreakout: true,
+    };
   }
   if (rvol >= 1.3) {
-    return { level: "elevated", label: "Över snitt", cssClass: "vol-elevated", signalScore: 1, confirmsBreakout: rvol >= 1.5 };
+    return {
+      level: "elevated", label: "Lite högre", plainLabel: "Lite högre än vanligt",
+      shortHint: "Fler köp och sälj än en normal dag",
+      cssClass: "vol-elevated", signalScore: 1, confirmsBreakout: rvol >= 1.5,
+    };
   }
   if (rvol >= 0.7) {
-    return { level: "normal", label: "Normal", cssClass: "vol-normal", signalScore: 0, confirmsBreakout: false };
+    return {
+      level: "normal", label: "Normal", plainLabel: "Normal volym",
+      shortHint: "Ungefär som en vanlig handelsdag",
+      cssClass: "vol-normal", signalScore: 0, confirmsBreakout: false,
+    };
   }
-  return { level: "low", label: "Låg", cssClass: "vol-low", signalScore: -1, confirmsBreakout: false };
+  return {
+    level: "low", label: "Låg", plainLabel: "Låg volym",
+    shortHint: "Färre köp och sälj än vanligt – marknaden är lugn",
+    cssClass: "vol-low", signalScore: -1, confirmsBreakout: false,
+  };
+}
+
+function formatVolumeComparePlain(rvol) {
+  if (rvol == null) return "";
+  const pct = Math.round(rvol * 100);
+  if (pct < 70) return `Jämfört med snittet senaste 20 dagarna: bara ${pct}% – alltså lugnare än vanligt.`;
+  if (pct <= 130) return `Jämfört med snittet senaste 20 dagarna: ${pct}% – ungefär en normal dag.`;
+  if (pct <= 200) return `Jämfört med snittet senaste 20 dagarna: ${pct}% – mer aktivt än vanligt.`;
+  return `Jämfört med snittet senaste 20 dagarna: ${pct}% – mycket mer aktivt än vanligt.`;
+}
+
+function formatPriceDirectionPlain(change24h) {
+  if (typeof change24h !== "number") return { text: "Okänd riktning", cssClass: "vol-normal" };
+  if (change24h > 0.5) return { text: `Priset stiger (${fmtPct(change24h)} senaste 24h)`, cssClass: "up" };
+  if (change24h < -0.5) return { text: `Priset faller (${fmtPct(change24h)} senaste 24h)`, cssClass: "down" };
+  return { text: "Priset är stabilt (±0,5% senaste 24h)", cssClass: "vol-normal" };
 }
 
 function computeVolumeTendency(volumes) {
@@ -179,66 +219,69 @@ function computeVolumeTendency(volumes) {
   if (changePct > 15) {
     return {
       dir: "rising",
-      label: "Stigande",
+      label: "Ökar",
       cssClass: "vol-trend-up",
-      text: `Volymen ökar (${fmtPct(changePct)} senaste 5 dagar vs föregående 5).`,
+      text: `Handeln ökar – ${fmtPct(changePct)} mer de senaste 5 dagarna jämfört med veckan innan.`,
     };
   }
   if (changePct < -15) {
     return {
       dir: "falling",
-      label: "Fallande",
+      label: "Minskar",
       cssClass: "vol-trend-down",
-      text: `Volymen minskar (${fmtPct(changePct)} senaste 5 dagar vs föregående 5).`,
+      text: `Handeln minskar – ${fmtPct(changePct)} färre affärer de senaste 5 dagarna jämfört med veckan innan.`,
     };
   }
   return {
     dir: "stable",
     label: "Stabil",
     cssClass: "vol-trend-stable",
-    text: "Volymen är stabil – inga tydliga förändringar senaste veckan.",
+    text: "Handeln ligger still – ungefär samma nivå hela veckan.",
   };
 }
 
 function getVolumeAction(cls, rvol, change24h, tendency) {
   if (cls.level === "unknown") {
     return rvol == null
-      ? "24h-volym visas – RVOL-klassificering kräver 20 dagars historik."
-      : "Volymdata otillräcklig för full analys.";
+      ? "Vi visar hur mycket som handlats idag. För att säga om det är lågt eller högt behöver vi några dagars historik."
+      : "Inte tillräckligt med data för att bedöma volymen.";
   }
+
   const priceUp = typeof change24h === "number" && change24h > 0.5;
   const priceDown = typeof change24h === "number" && change24h < -0.5;
 
   if (cls.level === "low") {
-    if (priceUp || priceDown) {
-      return "Låg volym vid prisrörelse → svag signal, risk för fakeout. Invänta volymbekräftelse (>1.3x snitt) innan du agerar.";
+    if (priceUp) {
+      return "Priset går upp men få handlar. Det kan vara en svag rörelse som inte håller – vänta tills fler börjar köpa innan du agerar.";
     }
-    return "Lågt intresse – marknaden avvaktar. Ingen tydlig riktning, passiv bevakning räcker.";
+    if (priceDown) {
+      return "Priset går ner men få handlar. Nedgången kanske inte är så allvarlig – eller så väntar marknaden. Var försiktig.";
+    }
+    return "Marknaden är lugn. Inte mycket köp eller sälj just nu – inget bråttom att agera.";
   }
   if (cls.level === "normal") {
     if (tendency?.dir === "rising" && priceUp) {
-      return "Normal volym men stigande trend → gradvis ökat intresse. Bevaka om volymen fortsätter upp mot 1.3x+.";
+      return "Normal handel idag, men fler och fler handlar varje dag och priset stiger. Ett tidigt tecken – håll koll.";
     }
-    return "Normal handelsaktivitet – prisrörelser saknar extra bekräftelse. Följ befintliga TA-signaler.";
+    return "Vanlig handelsdag. Prisrörelser är varken extra starka eller extra svaga.";
   }
   if (cls.level === "elevated") {
-    if (priceUp) return "Volym över snitt + uppgång → tidig bekräftelse av bullish rörelse. Överväg position med tight stop.";
-    if (priceDown) return "Volym över snitt + nedgång → säljtryck bekräftas. Var försiktig med köp.";
-    return "Ökad aktivitet utan tydlig prisriktning → möjlig ackumulering eller distribution. Bevaka nästa dag.";
+    if (priceUp) return "Fler handlar än vanligt och priset stiger. Ett positivt tecken – men sätt gärna en stop-loss om du köper.";
+    if (priceDown) return "Fler handlar än vanligt och priset faller. Säljare är aktiva – var försiktig med att köpa.";
+    return "Fler handlar än vanligt men priset rör sig knappt. Någon stor spelare kan bygga position – avvakta.";
   }
   if (cls.level === "high") {
-    if (priceUp) return "Hög volym + uppgång → stark bullish bekräftelse. Utbrott och trendföljning är mer trovärdiga.";
-    if (priceDown) return "Hög volym + nedgång → stark bearish bekräftelse. Undvik att fånga fallande kniv.";
-    return "Hög volym utan tydlig riktning → stor omsättning, vänta på pris att välja sida.";
+    if (priceUp) return "Mycket handel och stigande pris. Många tror på uppgång – en starkare signal än vid låg volym.";
+    if (priceDown) return "Mycket handel och fallande pris. Många säljer – nedgången är mer trovärdig.";
+    return "Mycket handel men priset står still. Marknaden är aktiv men osäker – vänta på riktning.";
   }
-  // extreme
   if (priceUp) {
-    return "Extrem volym + uppgång → kraftfull rörelse. Kontrollera nyheter/katalysatorer – kan vara början eller slut på trend.";
+    return "Extremt mycket handel och stigande pris. Kolla nyheter – något kan ha hänt. Kan vara start eller slut på en stor rörelse.";
   }
   if (priceDown) {
-    return "Extrem volym + nedgång → panik eller massiv vinsthemtagning. Stor försiktighet vid köp.";
+    return "Extremt mycket handel och fallande pris. Många paniksäljer eller tar hem vinst. Var extra försiktig med köp.";
   }
-  return "Extrem volym utan tydlig riktning → marknaden i rörelse. Vänta på riktning innan större position.";
+  return "Extremt mycket handel utan tydlig riktning. Något stort pågår – vänta tills det klarnar.";
 }
 
 function renderVolumeAnalysis(volumes, change24h, suffix = "d") {
@@ -249,38 +292,34 @@ function renderVolumeAnalysis(volumes, change24h, suffix = "d") {
   const action = getVolumeAction(cls, rvol, change24h, tendency);
 
   if (els.volLevelBadge) {
-    els.volLevelBadge.textContent = cls.label;
+    els.volLevelBadge.textContent = cls.plainLabel;
     els.volLevelBadge.className = `vol-badge ${cls.cssClass}`;
   }
   if (els.volRvolSummary) {
-    els.volRvolSummary.textContent = rvol != null ? `${rvol.toFixed(1)}x av 20d-snitt` : "–";
+    els.volRvolSummary.textContent = cls.shortHint || formatVolumeComparePlain(rvol);
   }
   if (els.volRvolValue) {
-    els.volRvolValue.textContent = rvol != null ? `${rvol.toFixed(2)}x` : "–";
+    els.volRvolValue.textContent = rvol != null ? formatVolumeComparePlain(rvol) : "–";
     els.volRvolValue.className = `value ${cls.cssClass}`;
   }
   if (els.vol7dTrend && trend7) {
-    els.vol7dTrend.textContent = `${fmtPct(trend7.pct)} · ${trend7.ratio.toFixed(1)}x vs 7-${suffix === "v" ? "veckors" : "dagars"} snitt`;
+    const pct = Math.round(trend7.ratio * 100);
+    els.vol7dTrend.textContent = `Senaste veckan: ${pct}% av veckosnittet (${fmtPct(trend7.pct)} ${trend7.pct >= 0 ? "mer" : "mindre"} än snittet)`;
     els.vol7dTrend.className = `value ${trend7.pct >= 0 ? "vol-elevated" : "vol-low"}`;
   } else if (els.vol7dTrend) {
-    els.vol7dTrend.textContent = "Otillräcklig data";
+    els.vol7dTrend.textContent = "Inte tillräckligt med data";
     els.vol7dTrend.className = "value";
   }
   if (els.volDirection) {
-    const priceUp = typeof change24h === "number" && change24h > 0.5;
-    const priceDown = typeof change24h === "number" && change24h < -0.5;
-    let dirText = "Sidledes (24h)";
-    let dirClass = "vol-normal";
-    if (priceUp) { dirText = "Uppåt (24h)"; dirClass = "up"; }
-    else if (priceDown) { dirText = "Nedåt (24h)"; dirClass = "down"; }
-    els.volDirection.textContent = dirText;
-    els.volDirection.className = `value ${dirClass}`;
+    const dir = formatPriceDirectionPlain(change24h);
+    els.volDirection.textContent = dir.text;
+    els.volDirection.className = `value ${dir.cssClass}`;
   }
   if (els.volInsight) {
-    els.volInsight.textContent = action;
+    els.volInsight.textContent = `Vad betyder det? ${action}`;
   }
   if (els.volTendency && tendency) {
-    els.volTendency.textContent = `Tendens: ${tendency.label} — ${tendency.text}`;
+    els.volTendency.textContent = `Trend: ${tendency.text}`;
     els.volTendency.className = `vol-tendency ${tendency.cssClass}`;
   } else if (els.volTendency) {
     els.volTendency.textContent = "";
@@ -296,7 +335,7 @@ function renderVolQuickBox(volumes, quoteVolume24h, change24h) {
   const action = getVolumeAction(cls, rvol, change24h, computeVolumeTendency(volumes));
 
   if (els.volQuickBadge) {
-    els.volQuickBadge.textContent = cls.label;
+    els.volQuickBadge.textContent = cls.plainLabel;
     els.volQuickBadge.className = `vol-badge ${cls.cssClass}`;
   }
   if (els.volQuickValue) {
@@ -308,9 +347,13 @@ function renderVolQuickBox(volumes, quoteVolume24h, change24h) {
       els.volQuickValue.className = "vol-quick-value";
     }
   }
+  if (els.volQuickCompare) {
+    els.volQuickCompare.textContent = rvol != null
+      ? formatVolumeComparePlain(rvol)
+      : (cls.shortHint || "Räknar ut om handeln är låg, normal eller hög…");
+  }
   if (els.volQuickDetail) {
-    const rvolText = rvol != null ? `${rvol.toFixed(1)}x av 20d-snitt` : "Otillräcklig historik";
-    els.volQuickDetail.textContent = `${rvolText} · ${action}`;
+    els.volQuickDetail.textContent = action;
   }
 }
 
@@ -631,8 +674,13 @@ function renderBreakoutAnalysis(ba, currentPrice, ma50val, ma200val) {
 
   // Volymbekräftelse
   const volCls = classifyVolume(ba.volRatio);
-  const volIcon = volCls.level === "low" ? "✗" : volCls.confirmsBreakout ? "✓" : "●";
-  els.volConfirm.textContent = `${volIcon} ${volCls.label} · ${ba.volRatio.toFixed(1)}x av 20d-snitt`;
+  const volPct = Math.round(ba.volRatio * 100);
+  const confirmed = volCls.confirmsBreakout;
+  els.volConfirm.textContent = confirmed
+    ? `Ja – hög handel (${volPct}% av normalt)`
+    : volCls.level === "low"
+      ? `Nej – låg handel (${volPct}% av normalt)`
+      : `Måttlig handel (${volPct}% av normalt)`;
   els.volConfirm.className = `value ${volCls.cssClass}`;
 
   // Motstånds- och stödlistor
@@ -851,11 +899,11 @@ function renderSourcesCard(latestRsi, sentimentValue, latestEma12, latestEma26, 
         : "–",
     },
     {
-      label: "Volym (RVOL 20d)",
-      value: rvol != null ? `${rvol.toFixed(1)}x · ${volCls.label}` : "–",
+      label: "Handelsvolym",
+      value: rvol != null ? `${Math.round(rvol * 100)}% av normalt · ${volCls.plainLabel}` : "–",
       score: volCls.signalScore,
       signalText: rvol != null
-        ? (volCls.level === "low" ? "● Låg – svag signal" : volCls.level === "normal" ? "● Normal aktivitet" : volCls.level === "elevated" ? "▲ Över snitt" : volCls.level === "high" ? "▲▲ Hög – bekräftar" : "▲▲ Extrem volym")
+        ? (volCls.level === "low" ? "● Låg – få handlar" : volCls.level === "normal" ? "● Normal dag" : volCls.level === "elevated" ? "▲ Lite mer än vanligt" : volCls.level === "high" ? "▲▲ Hög – trovärdig rörelse" : "▲▲ Extremt mycket handel")
         : "–",
     },
   ];
@@ -980,22 +1028,22 @@ function buildSignal(latestRsi, change24h, sentimentValue, latestEma12, latestEm
         if (trendDir !== 0) {
           const volScore = trendDir * 2;
           score += volScore;
-          reasons.push({ score: volScore, text: `${volScore > 0 ? "▲▲" : "▼▼"} Volym ${volRatio.toFixed(1)}x (${volCls.label}) → stark bekräftelse av ${trendDir > 0 ? "uppåt" : "nedåt"}rörelse.` });
+          reasons.push({ score: volScore, text: `${volScore > 0 ? "▲▲" : "▼▼"} Mycket handel (${Math.round(volRatio * 100)}% av normalt) → ${trendDir > 0 ? "uppgången" : "nedgången"} är mer trovärdig.` });
         } else {
-          reasons.push({ score: 0, text: `● Volym ${volRatio.toFixed(1)}x (${volCls.label}) → hög aktivitet, ingen tydlig riktning.` });
+          reasons.push({ score: 0, text: `● Mycket handel (${Math.round(volRatio * 100)}% av normalt) men priset rör sig knappt.` });
         }
       } else if (volCls.level === "elevated") {
         if (trendDir !== 0) {
           const volScore = trendDir;
           score += volScore;
-          reasons.push({ score: volScore, text: `${volScore > 0 ? "▲" : "▼"} Volym ${volRatio.toFixed(1)}x (${volCls.label}) → bekräftar ${trendDir > 0 ? "uppåt" : "nedåt"}rörelse.` });
+          reasons.push({ score: volScore, text: `${volScore > 0 ? "▲" : "▼"} Mer handel än vanligt (${Math.round(volRatio * 100)}%) → stödjer ${trendDir > 0 ? "uppgång" : "nedgång"}.` });
         } else {
-          reasons.push({ score: 0, text: `● Volym ${volRatio.toFixed(1)}x (${volCls.label}) → ökad aktivitet.` });
+          reasons.push({ score: 0, text: `● Mer handel än vanligt (${Math.round(volRatio * 100)}% av normalt).` });
         }
       } else if (volCls.level === "low") {
-        reasons.push({ score: 0, text: `● Volym ${volRatio.toFixed(1)}x (${volCls.label}) → lågt intresse, svag signal.` });
+        reasons.push({ score: 0, text: `● Låg handel (${Math.round(volRatio * 100)}% av normalt) → svag signal, var försiktig.` });
       } else {
-        reasons.push({ score: 0, text: `● Volym ${volRatio.toFixed(1)}x (${volCls.label}) → normal aktivitet.` });
+        reasons.push({ score: 0, text: `● Normal handel (${Math.round(volRatio * 100)}% av normalt).` });
       }
     }
   }
@@ -1111,7 +1159,7 @@ function updateIndicatorsForTimeframe(tf) {
     if (trend7) {
       const rvol = computeRvol20(volumes);
       const cls = classifyVolume(rvol);
-      els.volumeTrend.textContent = `${cls.label} · ${trend7.ratio.toFixed(1)}x vs 7-${suffix === "v" ? "veckors" : "dagars"} snitt`;
+      els.volumeTrend.textContent = `${cls.plainLabel} · ${Math.round(trend7.ratio * 100)}% av veckosnittet`;
       els.volumeTrend.className = `value ${cls.cssClass}`;
     } else {
       els.volumeTrend.textContent = "Ingen volymdata";
@@ -3196,7 +3244,7 @@ async function loadData() {
         const cls = classifyVolume(rvol);
         const trend7 = computeVolTrend7(volumes);
         if (trend7) {
-          els.volumeTrend.textContent = `${cls.label} · ${trend7.ratio.toFixed(1)}x vs 7-dagars snitt`;
+          els.volumeTrend.textContent = `${cls.plainLabel} · ${Math.round(trend7.ratio * 100)}% av veckosnittet`;
           els.volumeTrend.className = `value ${cls.cssClass}`;
         }
       }
@@ -3207,7 +3255,7 @@ async function loadData() {
       if (md && volumes.length >= 21) {
         const rvol = computeRvol20(volumes);
         const cls = classifyVolume(rvol);
-        els.volume24h.textContent = `${fmtLarge(md.total_volume ?? quoteVolume24h)} · ${rvol.toFixed(1)}x (${cls.label})`;
+        els.volume24h.textContent = `${fmtLarge(md.total_volume ?? quoteVolume24h)} · ${cls.plainLabel}`;
       }
 
       // 3b) VWAP & Fibonacci

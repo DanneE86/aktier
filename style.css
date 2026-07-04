@@ -328,11 +328,37 @@ select:focus-visible {
 }
 
 .vol-quick-title {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e0e4f8;
+}
+
+.vol-quick-subtitle {
+  display: block;
   font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: #8b91ab;
-  font-weight: 600;
+  margin-top: 2px;
+}
+
+.vol-quick-unit {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  color: #8b91ab;
+}
+
+.vol-quick-compare {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: #c7cdf0;
+  line-height: 1.45;
+}
+
+.vol-card-intro {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  color: #8b91ab;
+  line-height: 1.5;
 }
 
 .vol-quick-value {
