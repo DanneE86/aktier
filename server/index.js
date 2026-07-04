@@ -6,6 +6,7 @@ const db = require("./db");
 const { runFullScan, CONFIG } = require("./scanner");
 const { registerFloatRoutes, runFloatSqueezeScan, DEFAULT_SQUEEZE_WATCHLIST } = require("./float-scanner");
 const { generateRockets, verifyRockets, getRockets, getRocketHistory, getYesterdayRocketTips } = require("./rocket-engine");
+const { fetchYahooDayData } = require("./yahoo-auth");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -136,6 +137,64 @@ app.post("/api/rockets/verify", async (req, res) => {
     res.json(result);
   } catch (e) {
     res.status(502).json({ error: e.message || "Verifiering misslyckades" });
+  }
+});
+
+// ── ROCKET PRICE DATA (open/close/current) ────────────────────────
+
+app.get("/api/rockets/prices", async (req, res) => {
+  const tickers = (req.query.tickers || "").split(",").filter(Boolean);
+  const date = req.query.date || new Date().toISOString().split("T")[0];
+  if (tickers.length === 0) return res.json({ prices: {} });
+
+  const prices = {};
+  await Promise.all(tickers.map(async (ticker) => {
+    try {
+      const data = await fetchYahooDayData(ticker, date);
+      if (data) prices[ticker] = data;
+    } catch (e) {
+      console.warn(`[Rocket Prices] ${ticker}:`, e.message);
+    }
+  }));
+  res.json({ date, prices });
+});
+
+// ── COINGECKO PROXY (avoids CORS + rate limiting via cache) ─────
+const cgCache = new Map();
+const CG_CACHE_TTL = 60_000;
+const ALLOWED_CG_PATHS = [
+  /^simple\/price$/,
+  /^global$/,
+  /^coins\/[a-z0-9-]+\/market_chart$/,
+  /^coins\/[a-z0-9-]+$/,
+  /^coins\/markets$/,
+];
+
+app.get("/api/coingecko/*", async (req, res) => {
+  const cgPath = req.params[0];
+
+  if (!ALLOWED_CG_PATHS.some(pattern => pattern.test(cgPath))) {
+    return res.status(403).json({ error: "CoinGecko path not allowed" });
+  }
+
+  const qs = new URLSearchParams(req.query).toString();
+  const url = `https://api.coingecko.com/api/v3/${cgPath}${qs ? "?" + qs : ""}`;
+
+  const cached = cgCache.get(url);
+  if (cached && Date.now() - cached.ts < CG_CACHE_TTL) {
+    return res.json(cached.data);
+  }
+
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return res.status(r.status).json({ error: `CoinGecko ${r.status}` });
+    const data = await r.json();
+    cgCache.set(url, { data, ts: Date.now() });
+    res.json(data);
+  } catch (e) {
+    console.error("[CoinGecko proxy]", e.message);
+    if (cached) return res.json(cached.data);
+    res.status(502).json({ error: "CoinGecko unreachable" });
   }
 });
 

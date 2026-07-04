@@ -1494,6 +1494,7 @@ function renderRocketList(section) {
   // Gårdagens tips (expanderbar)
   if (yesterdayRocketData && yesterdayRocketData.rockets && yesterdayRocketData.rockets.length > 0) {
     renderYesterdayRocketSection(section);
+    setTimeout(function() { autoLoadPricesForToday(yesterdayRocketData); }, 300);
   }
 
   // Morgondagens raketer (expanderbar)
@@ -1533,8 +1534,11 @@ function renderRocketList(section) {
     todayExpand.body.appendChild(infoCard);
 
     rocketData.rockets.forEach((rocket, i) => {
-      todayExpand.body.appendChild(renderRocketCard(rocket, i + 1));
+      todayExpand.body.appendChild(renderRocketCard(rocket, i + 1, false, rocketData.target_date));
     });
+
+    // Auto-ladda kurser för morgondagens raketer
+    setTimeout(function() { autoLoadPricesForToday(rocketData); }, 300);
   }
 
   // Historik (expanderbar lista)
@@ -1728,6 +1732,33 @@ function renderRocketCard(rocket, rank, isYesterday, targetDate) {
     card.appendChild(pending);
   }
 
+  // Kursdatasektion (öppning / stängning / aktuell) – visas direkt
+  var priceDataId = "rk-pd-" + rocket.ticker.replace(/[^a-zA-Z0-9]/g, "_") + "-" + (targetDate || "today");
+  var priceBox = el("div", "rocket-price-box");
+  priceBox.id = priceDataId;
+  priceBox.style.cssText = "margin-top:10px;padding:10px 12px;border-radius:8px;background:rgba(21,25,41,0.8);border:1px solid #2b3252";
+  var priceGrid = el("div", "stock-card-indicators");
+  priceGrid.style.gap = "10px";
+
+  var mkItem = function(lbl, val, cls) {
+    var ind = el("div", "stock-mini-indicator");
+    ind.appendChild(el("span", "label", lbl));
+    var v = el("span", "stock-mini-value " + (cls || ""), val);
+    ind.appendChild(v);
+    return ind;
+  };
+
+  priceGrid.appendChild(mkItem("Pred. pris", "$" + (rocket.price_at_prediction || 0).toFixed(2)));
+  priceGrid.appendChild(mkItem("Öppning", "...", "loading-pulse"));
+  priceGrid.appendChild(mkItem("Stängning", "...", "loading-pulse"));
+  priceGrid.appendChild(mkItem("Aktuell", "...", "loading-pulse"));
+
+  priceBox.appendChild(priceGrid);
+  card.appendChild(priceBox);
+  card.dataset.priceDataId = priceDataId;
+  card.dataset.rocketTicker = rocket.ticker;
+  card.dataset.rocketPredPrice = String(rocket.price_at_prediction || 0);
+
   return card;
 }
 
@@ -1770,7 +1801,125 @@ function renderRocketHistoryCard(pred) {
     expand.body.appendChild(renderRocketCard(rocket, i + 1, false, pred.target_date));
   });
 
+  // Auto-ladda kurser när expandern öppnas
+  expand.details.addEventListener("toggle", function() {
+    if (expand.details.open && !expand.details.dataset.pricesLoaded) {
+      expand.details.dataset.pricesLoaded = "1";
+      autoLoadPricesForPrediction(pred);
+    }
+  });
+
   return expand.details;
+}
+
+async function autoLoadPricesForPrediction(pred) {
+  var tickers = (pred.rockets || []).map(function(r) { return r.ticker; });
+  if (tickers.length === 0) return;
+
+  try {
+    var res = await fetchWithTimeout(
+      SCANNER_API + "/rockets/prices?tickers=" + tickers.join(",") + "&date=" + pred.target_date,
+      null, 10000
+    );
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    var data = await res.json();
+    var prices = data.prices || {};
+
+    (pred.rockets || []).forEach(function(rocket) {
+      fillRocketPriceBox(rocket, pred.target_date, prices[rocket.ticker]);
+    });
+  } catch (e) {
+    (pred.rockets || []).forEach(function(rocket) {
+      fillRocketPriceBox(rocket, pred.target_date, null);
+    });
+  }
+}
+
+function autoLoadPricesForToday(rocketDataObj) {
+  if (!rocketDataObj || !rocketDataObj.rockets || rocketDataObj.rockets.length === 0) return;
+  var tickers = rocketDataObj.rockets.map(function(r) { return r.ticker; });
+  var targetDate = rocketDataObj.target_date;
+
+  fetchWithTimeout(
+    SCANNER_API + "/rockets/prices?tickers=" + tickers.join(",") + "&date=" + targetDate,
+    null, 10000
+  ).then(function(res) {
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+  }).then(function(data) {
+    var prices = data.prices || {};
+    rocketDataObj.rockets.forEach(function(rocket) {
+      fillRocketPriceBox(rocket, targetDate, prices[rocket.ticker]);
+    });
+  }).catch(function() {
+    rocketDataObj.rockets.forEach(function(rocket) {
+      fillRocketPriceBox(rocket, targetDate, null);
+    });
+  });
+}
+
+function fillRocketPriceBox(rocket, targetDate, priceInfo) {
+  var safeT = rocket.ticker.replace(/[^a-zA-Z0-9]/g, "_");
+  var boxId = "rk-pd-" + safeT + "-" + (targetDate || "today");
+  var box = document.getElementById(boxId);
+  if (!box) return;
+
+  clearChildren(box);
+  var grid = el("div", "stock-card-indicators");
+  grid.style.gap = "10px";
+
+  var predPrice = rocket.price_at_prediction || 0;
+
+  var mkPriceItem = function(label, price, refPrice) {
+    var ind = el("div", "stock-mini-indicator");
+    ind.appendChild(el("span", "label", label));
+    var val = el("span", "stock-mini-value");
+    if (price == null) {
+      val.textContent = "—";
+      val.className = "stock-mini-value";
+    } else {
+      var chg = refPrice ? ((price - refPrice) / refPrice * 100) : 0;
+      val.textContent = "$" + price.toFixed(2);
+      if (refPrice) {
+        val.textContent += " (" + (chg >= 0 ? "+" : "") + chg.toFixed(1) + "%)";
+        val.className = "stock-mini-value " + (chg >= 0 ? "up" : "down");
+      }
+    }
+    ind.appendChild(val);
+    return ind;
+  };
+
+  grid.appendChild(mkPriceItem("Pred. pris", predPrice, null));
+
+  if (!priceInfo) {
+    grid.appendChild(mkPriceItem("Öppning " + targetDate, null, null));
+    grid.appendChild(mkPriceItem("Stängning " + targetDate, null, null));
+    grid.appendChild(mkPriceItem("Aktuell kurs", null, null));
+  } else {
+    grid.appendChild(mkPriceItem("Öppning " + targetDate, priceInfo.open, predPrice));
+    grid.appendChild(mkPriceItem("Stängning " + targetDate, priceInfo.close, predPrice));
+    grid.appendChild(mkPriceItem("Aktuell kurs", priceInfo.current, predPrice));
+  }
+
+  box.appendChild(grid);
+
+  // Update card header with live price
+  var livePrice = priceInfo ? priceInfo.current : null;
+  if (livePrice == null && priceInfo) livePrice = priceInfo.close;
+  if (livePrice != null) {
+    var card = box.closest(".stock-card");
+    if (card) {
+      var headerPrice = card.querySelector(".stock-card-price");
+      if (headerPrice) headerPrice.textContent = "$" + livePrice.toFixed(2);
+      var headerChange = card.querySelector(".stock-card-change");
+      if (headerChange) {
+        var predP = rocket.price_at_prediction || 0;
+        var chgPct = predP > 0 ? ((livePrice - predP) / predP * 100) : 0;
+        headerChange.textContent = (chgPct >= 0 ? "+" : "") + chgPct.toFixed(1) + "% sedan pred.";
+        headerChange.className = "stock-card-change " + (chgPct >= 0 ? "up" : "down");
+      }
+    }
+  }
 }
 
 function formatLargeNumber(n) {

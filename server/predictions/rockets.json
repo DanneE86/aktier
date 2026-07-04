@@ -134,134 +134,100 @@
       }
     },
     {
-      "id": "rocket-2026-06-21",
-      "prediction_date": "2026-06-21",
-      "target_date": "2026-06-22",
-      "generated_at": "2026-06-21T09:49:53.305Z",
-      "scanner_universe": 2245,
-      "candidates_scored": 1122,
+      "id": "rocket-2026-06-22",
+      "prediction_date": "2026-06-22",
+      "target_date": "2026-06-23",
+      "generated_at": "2026-06-22T18:12:34.670Z",
+      "scanner_universe": 1972,
+      "candidates_scored": 832,
+      "filters": {
+        "min_rocket_score": 65,
+        "max_picks": 3,
+        "excluded_pump_count": 20,
+        "below_threshold_count": 829
+      },
       "rockets": [
         {
-          "ticker": "QXL",
-          "name": "Quantum X Labs Inc.",
-          "price_at_prediction": 6.35,
-          "change_today": 12.989325,
-          "rocket_score": 75,
-          "volume": 385041,
-          "relative_volume": 5.163691713492564,
-          "confidence_score": 50,
-          "risk_score": 2,
-          "scanner_type": "momentum",
-          "trigger_reason": "+13.0% | Vol: 385K | 5.2x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
-          "risk_flags": [],
-          "result": {
-            "verified_at": "2026-06-21T09:54:33.547Z",
-            "current_price": 6.35,
-            "change_pct": 0,
-            "was_correct": false,
-            "hit_20pct": false,
-            "hit_stop_loss": false
-          }
-        },
-        {
-          "ticker": "LIXT",
-          "name": "Lixte Biotechnology Holdings, I",
-          "price_at_prediction": 7.61,
-          "change_today": 9.339082,
-          "rocket_score": 75,
-          "volume": 1007714,
-          "relative_volume": 6.35032485332762,
-          "confidence_score": 48,
-          "risk_score": 2,
-          "scanner_type": "momentum",
-          "trigger_reason": "+9.3% | Vol: 1.0M | 6.4x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
-          "risk_flags": [],
-          "result": {
-            "verified_at": "2026-06-21T09:54:33.548Z",
-            "current_price": 7.61,
-            "change_pct": 0,
-            "was_correct": false,
-            "hit_20pct": false,
-            "hit_stop_loss": false
-          }
-        },
-        {
-          "ticker": "MFI",
-          "name": "mF International Limited",
-          "price_at_prediction": 9.875,
-          "change_today": 25.636131,
+          "ticker": "RGNX",
+          "name": "REGENXBIO Inc.",
+          "price_at_prediction": 9.4188,
+          "change_today": 20.753849,
           "rocket_score": 70,
-          "volume": 67622,
-          "relative_volume": 5.253418272218769,
-          "confidence_score": 60,
+          "volume": 6687777,
+          "relative_volume": 5.031555101804363,
+          "confidence_score": 70,
           "risk_score": 2,
           "scanner_type": "momentum",
-          "trigger_reason": "+25.6% | Vol: 68K | 5.3x snittvolym | $5-$10",
+          "trigger_reason": "+20.8% | Vol: 6.7M | 5.0x snittvolym | EXTREM VOLYM | $5-$10",
           "risk_flags": [],
           "result": {
-            "verified_at": "2026-06-21T09:54:33.548Z",
-            "current_price": 9.875,
-            "change_pct": 0,
-            "was_correct": false,
+            "verified_at": "2026-07-04T07:37:49.113Z",
+            "target_date": "2026-06-23",
+            "current_price": 9.949999809265137,
+            "change_pct": 5.64,
+            "was_correct": true,
             "hit_20pct": false,
-            "hit_stop_loss": false
+            "hit_stop_loss": false,
+            "status": "verified"
           }
         },
         {
-          "ticker": "KFFB",
-          "name": "Kentucky First Federal Bancorp",
-          "price_at_prediction": 5.1,
-          "change_today": 6.694565,
+          "ticker": "GLBS",
+          "name": "Globus Maritime Limited",
+          "price_at_prediction": 3.0401,
+          "change_today": 10.492246,
           "rocket_score": 70,
-          "volume": 22653,
-          "relative_volume": 9.46636021730046,
-          "confidence_score": 43,
+          "volume": 526608,
+          "relative_volume": 4.349615924671678,
+          "confidence_score": 55,
+          "risk_score": 2,
+          "scanner_type": "momentum",
+          "trigger_reason": "+10.5% | Vol: 527K | 4.3x snittvolym | EXTREM VOLYM | Nara 52v-high | $1-$5",
+          "risk_flags": [],
+          "result": {
+            "verified_at": "2026-07-04T07:37:49.113Z",
+            "target_date": "2026-06-23",
+            "current_price": 3.059999942779541,
+            "change_pct": 0.65,
+            "was_correct": true,
+            "hit_20pct": false,
+            "hit_stop_loss": false,
+            "status": "verified"
+          }
+        },
+        {
+          "ticker": "ICCM",
+          "name": "IceCure Medical Ltd.",
+          "price_at_prediction": 6,
+          "change_today": 11.11111,
+          "rocket_score": 65,
+          "volume": 15056525,
+          "relative_volume": 5.786208659026801,
+          "confidence_score": 65,
           "risk_score": 3,
           "scanner_type": "momentum",
-          "trigger_reason": "+6.7% | Vol: 23K | 9.5x snittvolym | Nara 52v-high | $5-$10",
+          "trigger_reason": "+11.1% | Vol: 15.1M | 5.8x snittvolym | EXTREM VOLYM | $5-$10",
           "risk_flags": [
             "Micro-cap (<$50M)"
           ],
           "result": {
-            "verified_at": "2026-06-21T09:54:33.548Z",
-            "current_price": 5.1,
-            "change_pct": 0,
-            "was_correct": false,
+            "verified_at": "2026-07-04T07:37:49.114Z",
+            "target_date": "2026-06-23",
+            "current_price": 6.119999885559082,
+            "change_pct": 2,
+            "was_correct": true,
             "hit_20pct": false,
-            "hit_stop_loss": false
-          }
-        },
-        {
-          "ticker": "GEG",
-          "name": "Great Elm Group, Inc.",
-          "price_at_prediction": 2.76,
-          "change_today": 20.52402,
-          "rocket_score": 68,
-          "volume": 91190,
-          "relative_volume": 7.5575998673959885,
-          "confidence_score": 65,
-          "risk_score": 3,
-          "scanner_type": "momentum",
-          "trigger_reason": "+20.5% | Vol: 91K | 7.6x snittvolym | $1-$5",
-          "risk_flags": [
-            "Micro-price ($1-3)"
-          ],
-          "result": {
-            "verified_at": "2026-06-21T09:54:33.548Z",
-            "current_price": 2.76,
-            "change_pct": 0,
-            "was_correct": false,
-            "hit_20pct": false,
-            "hit_stop_loss": false
+            "hit_stop_loss": false,
+            "status": "verified"
           }
         }
       ],
       "summary": {
-        "verified_count": 5,
-        "correct_count": 0,
-        "hit_rate": 0,
+        "verified_count": 3,
+        "correct_count": 3,
+        "hit_rate": 100,
         "rockets_20pct": 0,
-        "avg_change": 0
+        "avg_change": 2.76
       }
     }
   ]

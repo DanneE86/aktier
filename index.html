@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ethereum – Pris & Köp/Sälj-signaler</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=4">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 </head>
@@ -13,12 +13,12 @@
   <div class="container">
 
     <!-- Navigation -->
-    <nav class="nav-bar">
-      <a href="index.html" class="nav-link nav-link-active">
-        <span class="nav-icon">&Xi;</span> ETH Tracker
+    <nav class="nav-bar" role="navigation" aria-label="Huvudnavigation">
+      <a href="index.html" class="nav-link nav-link-active" aria-current="page">
+        <span class="nav-icon" aria-hidden="true">&Xi;</span> ETH Tracker
       </a>
       <a href="stocks.html" class="nav-link">
-        <span class="nav-icon">$</span> Aktieanalys
+        <span class="nav-icon" aria-hidden="true">$</span> Aktieanalys
       </a>
     </nav>
 
@@ -85,6 +85,53 @@
       </div>
     </section>
 
+    <section id="supply-card" class="card">
+      <h2>ETH Tokenomics</h2>
+      <div class="indicators">
+        <div class="indicator">
+          <span class="label">Cirkulerande Supply</span>
+          <span id="supply-circulating" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Total Supply</span>
+          <span id="supply-total" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Staking Ratio (est.)</span>
+          <span id="supply-staking-ratio" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Inflation vs Burn</span>
+          <span id="supply-net-issuance" class="value">–</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="staking-dashboard-card" class="card">
+      <h2>ETH Staking Overview</h2>
+      <div class="indicators">
+        <div class="indicator">
+          <span class="label">Estimerat ETH Staked</span>
+          <span id="staking-total-eth" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Staking Ratio</span>
+          <span id="staking-ratio-pct" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Bästa Staking APY</span>
+          <span id="staking-best-apy" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Nätverkssäkerhet</span>
+          <span id="staking-security" class="value">–</span>
+        </div>
+      </div>
+      <p class="disclaimer" style="margin-top:12px">
+        Staking-data baseras på supply-differens och DefiLlama yields. Exakta siffror kan avvika.
+      </p>
+    </section>
+
     <section id="sentiment-card" class="card">
       <h2>Marknadssentiment</h2>
       <div class="sentiment-row">
@@ -116,6 +163,18 @@
       <ul id="staking-list" class="staking-list">
         <li class="staking-loading">Laddar staking-data…</li>
       </ul>
+    </section>
+
+    <section id="l2-card" class="card">
+      <h2>Layer 2 Ekosystem</h2>
+      <div class="l2-total-row">
+        <span class="label">Total L2 TVL</span>
+        <span id="l2-total-tvl" class="price-small">–</span>
+      </div>
+      <div class="l2-bar-container">
+        <div class="l2-bar" id="l2-bar"></div>
+        <div class="l2-legend" id="l2-legend"></div>
+      </div>
     </section>
 
     <section id="gas-card" class="card">
@@ -421,6 +480,10 @@
 
     <section class="card">
       <h2>Indikatorer</h2>
+      <div class="timeframe-tabs" id="timeframe-tabs">
+        <button class="timeframe-tab timeframe-tab-active" data-tf="1d">1 dag</button>
+        <button class="timeframe-tab" data-tf="1w">1 vecka</button>
+      </div>
       <div class="indicators" id="indicators">
         <div class="indicator">
           <span class="label">SMA 7 dagar</span>
@@ -465,6 +528,22 @@
       </div>
     </section>
 
+    <section class="card" id="vwap-fib-card">
+      <h2>VWAP & Fibonacci <span class="ta-badge">TA</span></h2>
+      <div class="indicators">
+        <div class="indicator">
+          <span class="label">VWAP (365d)</span>
+          <span id="vwap-value" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Pris vs VWAP</span>
+          <span id="vwap-signal" class="value">–</span>
+        </div>
+      </div>
+      <h3 class="ta-subtitle" style="margin-top:16px">Fibonacci Retracement (90d)</h3>
+      <div class="fib-levels" id="fib-levels"></div>
+    </section>
+
     <footer>
       <p>
         Källor:
@@ -481,6 +560,6 @@
     </footer>
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=4"></script>
 </body>
 </html>

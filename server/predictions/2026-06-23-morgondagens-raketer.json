@@ -1,0 +1,150 @@
+{
+  "title": "Morgondagens raketer",
+  "prediction_date": "2026-06-22",
+  "target_date": "2026-06-23",
+  "target_day": "Tuesday",
+  "generated_at": "2026-06-22T18:12:34.670Z",
+  "scanner_universe": 1972,
+  "filters": {
+    "min_rocket_score": 65,
+    "max_picks": 3,
+    "excluded_pump_count": 20,
+    "below_threshold_count": 829
+  },
+  "rockets": [
+    {
+      "ticker": "RGNX",
+      "name": "REGENXBIO Inc.",
+      "price_at_prediction": 9.4188,
+      "change_today": 20.753849,
+      "rocket_score": 70,
+      "volume": 6687777,
+      "relative_volume": 5.031555101804363,
+      "confidence_score": 70,
+      "risk_score": 2,
+      "scanner_type": "momentum",
+      "trigger_reason": "+20.8% | Vol: 6.7M | 5.0x snittvolym | EXTREM VOLYM | $5-$10",
+      "risk_flags": [],
+      "result": {
+        "verified_at": "2026-07-04T07:37:49.113Z",
+        "target_date": "2026-06-23",
+        "current_price": 9.949999809265137,
+        "change_pct": 5.64,
+        "was_correct": true,
+        "hit_20pct": false,
+        "hit_stop_loss": false,
+        "status": "verified"
+      },
+      "target_20pct": 11.3,
+      "stop_loss_8pct": 8.67
+    },
+    {
+      "ticker": "GLBS",
+      "name": "Globus Maritime Limited",
+      "price_at_prediction": 3.0401,
+      "change_today": 10.492246,
+      "rocket_score": 70,
+      "volume": 526608,
+      "relative_volume": 4.349615924671678,
+      "confidence_score": 55,
+      "risk_score": 2,
+      "scanner_type": "momentum",
+      "trigger_reason": "+10.5% | Vol: 527K | 4.3x snittvolym | EXTREM VOLYM | Nara 52v-high | $1-$5",
+      "risk_flags": [],
+      "result": {
+        "verified_at": "2026-07-04T07:37:49.113Z",
+        "target_date": "2026-06-23",
+        "current_price": 3.059999942779541,
+        "change_pct": 0.65,
+        "was_correct": true,
+        "hit_20pct": false,
+        "hit_stop_loss": false,
+        "status": "verified"
+      },
+      "target_20pct": 3.65,
+      "stop_loss_8pct": 2.8
+    },
+    {
+      "ticker": "ICCM",
+      "name": "IceCure Medical Ltd.",
+      "price_at_prediction": 6,
+      "change_today": 11.11111,
+      "rocket_score": 65,
+      "volume": 15056525,
+      "relative_volume": 5.786208659026801,
+      "confidence_score": 65,
+      "risk_score": 3,
+      "scanner_type": "momentum",
+      "trigger_reason": "+11.1% | Vol: 15.1M | 5.8x snittvolym | EXTREM VOLYM | $5-$10",
+      "risk_flags": [
+        "Micro-cap (<$50M)"
+      ],
+      "result": {
+        "verified_at": "2026-07-04T07:37:49.114Z",
+        "target_date": "2026-06-23",
+        "current_price": 6.119999885559082,
+        "change_pct": 2,
+        "was_correct": true,
+        "hit_20pct": false,
+        "hit_stop_loss": false,
+        "status": "verified"
+      },
+      "target_20pct": 7.2,
+      "stop_loss_8pct": 5.52
+    }
+  ],
+  "verification": {
+    "check_date": "2026-06-23",
+    "check_time": "16:00 ET (market close)",
+    "success_criteria": "+20% fran price_at_prediction = raket träffad. Under -8% = stop-loss.",
+    "result": {
+      "verified_count": 3,
+      "correct_count": 3,
+      "hit_rate": 100,
+      "rockets_20pct": 0,
+      "avg_change": 2.76
+    },
+    "verified_at": "2026-07-04T07:37:49.118Z",
+    "rockets": [
+      {
+        "ticker": "RGNX",
+        "result": {
+          "verified_at": "2026-07-04T07:37:49.113Z",
+          "target_date": "2026-06-23",
+          "current_price": 9.949999809265137,
+          "change_pct": 5.64,
+          "was_correct": true,
+          "hit_20pct": false,
+          "hit_stop_loss": false,
+          "status": "verified"
+        }
+      },
+      {
+        "ticker": "GLBS",
+        "result": {
+          "verified_at": "2026-07-04T07:37:49.113Z",
+          "target_date": "2026-06-23",
+          "current_price": 3.059999942779541,
+          "change_pct": 0.65,
+          "was_correct": true,
+          "hit_20pct": false,
+          "hit_stop_loss": false,
+          "status": "verified"
+        }
+      },
+      {
+        "ticker": "ICCM",
+        "result": {
+          "verified_at": "2026-07-04T07:37:49.114Z",
+          "target_date": "2026-06-23",
+          "current_price": 6.119999885559082,
+          "change_pct": 2,
+          "was_correct": true,
+          "hit_20pct": false,
+          "hit_stop_loss": false,
+          "status": "verified"
+        }
+      }
+    ]
+  }
+}

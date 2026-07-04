@@ -1,6 +1,6 @@
 // Datakällor: CoinGecko (pris/historik/marknad), Binance (oberoende prisjämförelse),
 // alternative.me (Crypto Fear & Greed Index), DefiLlama (TVL/staking) och Owlracle (gas).
-const COINGECKO_BASE = "https://api.coingecko.com/api/v3";
+const COINGECKO_BASE = "/api/coingecko";
 const BINANCE_TICKER_URL = "https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT";
 const FEAR_GREED_URL = "https://api.alternative.me/fng/?limit=1";
 const DEFILLAMA_CHAINS_URL = "https://api.llama.fi/v2/chains";
@@ -44,6 +44,10 @@ const els = {
   defiTvl:          document.getElementById("defi-tvl"),
   defiTvlChange:    document.getElementById("defi-tvl-change"),
   stakingList:      document.getElementById("staking-list"),
+  // Layer 2 Ekosystem
+  l2TotalTvl:       document.getElementById("l2-total-tvl"),
+  l2Bar:            document.getElementById("l2-bar"),
+  l2Legend:         document.getElementById("l2-legend"),
   // Gas Tracker
   gasLoad:          document.getElementById("gas-load"),
   gasLow:           document.getElementById("gas-low"),
@@ -86,6 +90,20 @@ const els = {
   newsList:         document.getElementById("news-list"),
   // Prisprognos
   forecastContent:  document.getElementById("forecast-content"),
+  // VWAP & Fibonacci
+  vwapValue:        document.getElementById("vwap-value"),
+  vwapSignal:       document.getElementById("vwap-signal"),
+  fibLevels:        document.getElementById("fib-levels"),
+  // ETH Tokenomics
+  supplyCirculating:  document.getElementById("supply-circulating"),
+  supplyTotal:        document.getElementById("supply-total"),
+  supplyStakingRatio: document.getElementById("supply-staking-ratio"),
+  supplyNetIssuance:  document.getElementById("supply-net-issuance"),
+  // Staking Dashboard
+  stakingTotalEth:    document.getElementById("staking-total-eth"),
+  stakingRatioPct:    document.getElementById("staking-ratio-pct"),
+  stakingBestApy:     document.getElementById("staking-best-apy"),
+  stakingSecurity:    document.getElementById("staking-security"),
 };
 
 const fmtUsd   = (n) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -113,12 +131,32 @@ function sma(values, period) {
   return slice.reduce((s, v) => s + v, 0) / period;
 }
 
+function arrayMin(arr) {
+  let min = arr[0];
+  for (let i = 1; i < arr.length; i++) if (arr[i] < min) min = arr[i];
+  return min;
+}
+
+function arrayMax(arr) {
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) if (arr[i] > max) max = arr[i];
+  return max;
+}
+
 // Rullande MA-serie (null för punkter med otillräcklig historik)
 function rollingMa(values, period) {
-  return values.map((_, i) => {
-    if (i < period - 1) return null;
-    return values.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
-  });
+  const result = new Array(values.length);
+  let sum = 0;
+  for (let i = 0; i < values.length; i++) {
+    sum += values[i];
+    if (i < period - 1) {
+      result[i] = null;
+    } else {
+      if (i >= period) sum -= values[i - period];
+      result[i] = sum / period;
+    }
+  }
+  return result;
 }
 
 // EMA: nyare värden väger tyngre, reagerar snabbare på prisrörelser än SMA
@@ -153,6 +191,44 @@ function bollingerBands(values, period = 20) {
   return { upper: mid + 2 * std, mid, lower: mid - 2 * std };
 }
 
+// VWAP: volymviktat genomsnittspris
+function vwap(prices, volumes) {
+  if (!prices.length || prices.length !== volumes.length) return null;
+  let cumPV = 0;
+  let cumV = 0;
+  for (let i = 0; i < prices.length; i++) {
+    cumPV += prices[i] * volumes[i];
+    cumV += volumes[i];
+  }
+  return cumV > 0 ? cumPV / cumV : null;
+}
+
+// Fibonacci Retracement: nyckelnivåer från senaste high/low
+function fibonacciLevels(prices, lookback = 90) {
+  if (prices.length < 2) return [];
+  const slice = prices.slice(-Math.min(lookback, prices.length));
+  const high = arrayMax(slice);
+  const low = arrayMin(slice);
+  const diff = high - low;
+  if (diff === 0) return [];
+
+  const ratios = [
+    { ratio: 0,     label: "0% (Botten)" },
+    { ratio: 0.236, label: "23.6%" },
+    { ratio: 0.382, label: "38.2%" },
+    { ratio: 0.5,   label: "50%" },
+    { ratio: 0.618, label: "61.8%" },
+    { ratio: 0.786, label: "78.6%" },
+    { ratio: 1,     label: "100% (Topp)" },
+  ];
+
+  return ratios.map(({ ratio, label }) => ({
+    level: ratio,
+    price: low + diff * ratio,
+    label,
+  }));
+}
+
 // ─── Utbrottsanalys ────────────────────────────────────────────────────────
 
 // Hitta lokala toppar (motstånd) och bottnar (stöd) i prisserien.
@@ -173,7 +249,7 @@ function findLocalExtremes(prices, lookback = 5) {
 
 // Gruppera nära liggande prisnivåer i kluster (samma zon inom tolerance%).
 // Starka zoner = fler historiska kontakter.
-function clusterLevels(points, totalLen, tolerance = 0.04) {
+function clusterLevels(points, totalLen, tolerance = 0.02) {
   const clusters = [];
   for (const pt of [...points].sort((a, b) => a.price - b.price)) {
     const c = clusters.find(c => Math.abs(c.price - pt.price) / c.price < tolerance);
@@ -191,13 +267,85 @@ function clusterLevels(points, totalLen, tolerance = 0.04) {
     .sort((a, b) => b.score - a.score);
 }
 
-function analyzeBreakout(prices, volumes, currentPrice) {
-  // lookback=3 hittar fler lokala extrempunkter (11-dagars fönster → 7-dagars)
+// Hitta konsolideringszoner – prisnivåer där priset rör sig sidleds.
+// Returnerar råa { price, idx } punkter – clusterLevels gör klustringen.
+function findConsolidationZones(prices, windowSize = 10, maxRange = 0.06) {
+  const zones = [];
+  for (let i = 0; i <= prices.length - windowSize; i++) {
+    const w = prices.slice(i, i + windowSize);
+    const hi = arrayMax(w);
+    const lo = arrayMin(w);
+    const mid = (hi + lo) / 2;
+    if ((hi - lo) / mid < maxRange) {
+      zones.push({ price: mid, idx: i + Math.floor(windowSize / 2) });
+    }
+  }
+  return zones;
+}
+
+// Hitta volymprofil-nivåer – priszoner med ovanligt hög handelsvolym.
+// Returnerar { price, idx } punkter viktade efter volymstyrka.
+function findVolumeProfile(prices, volumes, numBins = 15) {
+  if (!volumes || volumes.length < 10) return [];
+  const lo = arrayMin(prices);
+  const hi = arrayMax(prices);
+  if (hi === lo) return [];
+  const binSize = (hi - lo) / numBins;
+  const bins = Array.from({ length: numBins }, (_, i) => ({
+    price: lo + binSize * (i + 0.5),
+    volume: 0,
+    lastDataIdx: 0,
+  }));
+  for (let i = 0; i < prices.length; i++) {
+    const bi = Math.min(Math.floor((prices[i] - lo) / binSize), numBins - 1);
+    bins[bi].volume += volumes[i] || 0;
+    bins[bi].lastDataIdx = Math.max(bins[bi].lastDataIdx, i);
+  }
+  const avgVol = bins.reduce((s, b) => s + b.volume, 0) / numBins;
+  if (avgVol === 0) return [];
+  const points = [];
+  for (const b of bins) {
+    if (b.volume <= avgVol * 1.2) continue;
+    const strength = Math.round(b.volume / avgVol);
+    for (let k = 0; k < strength; k++) {
+      points.push({ price: b.price, idx: b.lastDataIdx });
+    }
+  }
+  return points;
+}
+
+function analyzeBreakout(prices, volumes, currentPrice, ma50val, ma200val) {
   const { maxima, minima } = findLocalExtremes(prices, 3);
   const n = prices.length;
 
-  const allResistance = clusterLevels(maxima, n);
-  const allSupport    = clusterLevels(minima, n);
+  const shortLen    = Math.min(30, prices.length);
+  const shortPrices = prices.slice(-shortLen);
+  const shortOffset = prices.length - shortLen;
+  const shortExtremes = findLocalExtremes(shortPrices, 2);
+  const shortMinima = shortExtremes.minima.map(p => ({ price: p.price, idx: p.idx + shortOffset }));
+  const shortMaxima = shortExtremes.maxima.map(p => ({ price: p.price, idx: p.idx + shortOffset }));
+
+  const microLen    = Math.min(14, prices.length);
+  const microPrices = prices.slice(-microLen);
+  const microOffset = prices.length - microLen;
+  const microExtremes = findLocalExtremes(microPrices, 1);
+  const microMinima = microExtremes.minima.map(p => ({ price: p.price, idx: p.idx + microOffset }));
+  const microMaxima = microExtremes.maxima.map(p => ({ price: p.price, idx: p.idx + microOffset }));
+
+  // Konsolideringszoner och volymprofil på senaste 90 dagar
+  const recentLen    = Math.min(90, prices.length);
+  const recentPrices = prices.slice(-recentLen);
+  const recentVols   = volumes.slice(-recentLen);
+  const idxOffset    = prices.length - recentLen;
+
+  const consolZones = findConsolidationZones(recentPrices).map(z => ({ price: z.price, idx: z.idx + idxOffset }));
+  const volProfile  = findVolumeProfile(recentPrices, recentVols).map(v => ({ price: v.price, idx: v.idx + idxOffset }));
+
+  // Slå ihop alla källor till stöd/motstånd
+  const allResPoints = [...maxima, ...shortMaxima, ...microMaxima, ...consolZones.filter(z => z.price > currentPrice), ...volProfile.filter(v => v.price > currentPrice)];
+  const allSupPoints = [...minima, ...shortMinima, ...microMinima, ...consolZones.filter(z => z.price < currentPrice), ...volProfile.filter(v => v.price < currentPrice)];
+  const allResistance = clusterLevels(allResPoints, n);
+  const allSupport    = clusterLevels(allSupPoints, n);
 
   // Aktiva motståndsnivåer: sorterade närmast-först
   const resistanceLevels = allResistance
@@ -208,23 +356,23 @@ function analyzeBreakout(prices, volumes, currentPrice) {
   // Aktiva stödnivåer: sorterade närmast-först (högst pris under nuvarande)
   const rawSupport = allSupport
     .filter(c => c.price < currentPrice * 0.995)
-    .sort((a, b) => b.price - a.price) // närmast först
+    .sort((a, b) => b.price - a.price)
     .slice(0, 6);
 
-  // Dynamiska stödnivåer från glidande medelvärden (agerar ofta som stöd)
-  const ma50val  = sma(prices, 50);
-  const ma200val = sma(prices, 200);
+  // Dynamiska stödnivåer från glidande medelvärden
   const dynamicSupport = [];
   if (ma50val  && ma50val  < currentPrice * 0.995) dynamicSupport.push({ price: ma50val,  label: "MA50",  touches: null });
   if (ma200val && ma200val < currentPrice * 0.995) dynamicSupport.push({ price: ma200val, label: "MA200", touches: null });
 
-  // Senaste 20-dagars lägsta (kortsiktigt stöd)
-  const low20d = Math.min(...prices.slice(-20));
+  const low7d = arrayMin(prices.slice(-7));
+  if (low7d < currentPrice * 0.995) {
+    dynamicSupport.push({ price: low7d, label: "7d-lägsta", touches: null });
+  }
+  const low20d = arrayMin(prices.slice(-20));
   if (low20d < currentPrice * 0.995) {
     dynamicSupport.push({ price: low20d, label: "20d-lägsta", touches: null });
   }
 
-  // Slå ihop och sortera närmast-först
   const supportLevels = [
     ...rawSupport,
     ...dynamicSupport.filter(d => !rawSupport.some(s => Math.abs(s.price - d.price) / d.price < 0.02)),
@@ -232,7 +380,7 @@ function analyzeBreakout(prices, volumes, currentPrice) {
 
   // Bruten motståndsnivå: pris har nyligen (senaste 7 dagarna) passerat uppåt
   const pricesLast7 = prices.slice(-7);
-  const minLast7    = Math.min(...pricesLast7);
+  const minLast7    = arrayMin(pricesLast7);
 
   const breakoutLevel = allResistance
     .filter(c =>
@@ -267,10 +415,7 @@ function analyzeBreakout(prices, volumes, currentPrice) {
   };
 }
 
-function renderBreakoutAnalysis(ba, prices, currentPrice) {
-  const ma50val  = sma(prices, 50);
-  const ma200val = sma(prices, 200);
-
+function renderBreakoutAnalysis(ba, currentPrice, ma50val, ma200val) {
   // MA-trend
   if (ma50val) {
     const above = currentPrice > ma50val;
@@ -433,12 +578,10 @@ function setSignal(type, label, reasons) {
   });
 }
 
-function renderSourcesCard(latestSma7, latestSma25, latestRsi, sentimentValue, latestEma12, latestEma26, bb, currentPrice, binancePrice) {
+function renderSourcesCard(latestRsi, sentimentValue, latestEma12, latestEma26, bb, currentPrice, binancePrice) {
   // ── Källstatus ──────────────────────────────────────────────────────────
-  // CoinGecko: blandat om indikatorerna pekar åt olika håll
   const cgSignals = [
-    latestSma7 && latestSma25 ? (latestSma7 > latestSma25 ? 1 : -1) : 0,
-    latestRsi ? (latestRsi < 30 ? 1 : latestRsi > 70 ? -1 : 0) : 0,
+    latestRsi ? (latestRsi < 35 ? 1 : latestRsi > 65 ? -1 : 0) : 0,
     latestEma12 && latestEma26 ? (latestEma12 > latestEma26 ? 1 : -1) : 0,
     bb && currentPrice ? (currentPrice < bb.lower ? 1 : currentPrice > bb.upper ? -1 : 0) : 0,
   ];
@@ -459,8 +602,10 @@ function renderSourcesCard(latestSma7, latestSma25, latestRsi, sentimentValue, l
   // Sentiment
   const sentEl = document.getElementById("src-sentiment");
   if (typeof sentimentValue === "number") {
-    if (sentimentValue <= 24)      { sentEl.textContent = `Positiv (${sentimentValue}/100 – Extrem rädsla)`; sentEl.className = "src-badge src-positive"; }
-    else if (sentimentValue >= 76) { sentEl.textContent = `Negativ (${sentimentValue}/100 – Extrem girighet)`; sentEl.className = "src-badge src-negative"; }
+    if (sentimentValue <= 15)      { sentEl.textContent = `Stark positiv (${sentimentValue}/100 – Extrem panik)`; sentEl.className = "src-badge src-positive"; }
+    else if (sentimentValue <= 30) { sentEl.textContent = `Positiv (${sentimentValue}/100 – Rädsla)`; sentEl.className = "src-badge src-positive"; }
+    else if (sentimentValue >= 85) { sentEl.textContent = `Stark negativ (${sentimentValue}/100 – Extrem eufori)`; sentEl.className = "src-badge src-negative"; }
+    else if (sentimentValue >= 70) { sentEl.textContent = `Negativ (${sentimentValue}/100 – Girighet)`; sentEl.className = "src-badge src-negative"; }
     else if (sentimentValue >= 55) { sentEl.textContent = `Neutral/negativ (${sentimentValue}/100)`; sentEl.className = "src-badge src-mixed"; }
     else                           { sentEl.textContent = `Neutral (${sentimentValue}/100)`; sentEl.className = "src-badge src-neutral"; }
   }
@@ -469,41 +614,40 @@ function renderSourcesCard(latestSma7, latestSma25, latestRsi, sentimentValue, l
   const scorecard = document.getElementById("signal-scorecard");
   scorecard.textContent = "";
 
+  const macdVal = latestEma12 && latestEma26 ? ((latestEma12 - latestEma26) / latestEma26) * 100 : null;
+  const bbPos = bb && currentPrice && (bb.upper - bb.lower) > 0 ? (currentPrice - bb.lower) / (bb.upper - bb.lower) : null;
+
   const items = [
     {
-      label: "SMA (Glidande medelvärde)",
-      value: latestSma7 && latestSma25 ? `${fmtUsd(latestSma7)} / ${fmtUsd(latestSma25)}` : "–",
-      score: latestSma7 && latestSma25 ? (latestSma7 > latestSma25 ? 1 : -1) : 0,
-      signalText: latestSma7 && latestSma25 ? (latestSma7 > latestSma25 ? "▲ Positiv (golden cross)" : "▼ Negativ (death cross)") : "–",
+      label: "MACD Momentum",
+      value: macdVal !== null ? `${macdVal > 0 ? "+" : ""}${macdVal.toFixed(2)}%` : "–",
+      score: macdVal !== null ? (macdVal > 1.5 ? 2 : macdVal > 0.3 ? 1 : macdVal < -1.5 ? -2 : macdVal < -0.3 ? -1 : 0) : 0,
+      signalText: macdVal !== null
+        ? (macdVal > 1.5 ? "▲▲ Stark bullish" : macdVal > 0.3 ? "▲ Svagt bullish" : macdVal < -1.5 ? "▼▼ Stark bearish" : macdVal < -0.3 ? "▼ Svagt bearish" : "● Neutral")
+        : "–",
     },
     {
       label: "RSI (Köpt/sålt-nivå)",
       value: latestRsi ? latestRsi.toFixed(1) : "–",
-      score: latestRsi ? (latestRsi < 30 ? 1 : latestRsi > 70 ? -1 : 0) : 0,
+      score: latestRsi ? (latestRsi < 20 ? 2 : latestRsi < 35 ? 1 : latestRsi > 80 ? -2 : latestRsi > 65 ? -1 : 0) : 0,
       signalText: latestRsi
-        ? (latestRsi < 30 ? "▲ Positiv (översåld)" : latestRsi > 70 ? "▼ Negativ (överköpt)" : "● Neutral")
+        ? (latestRsi < 20 ? "▲▲ Extremt översåld" : latestRsi < 35 ? "▲ Översåld" : latestRsi > 80 ? "▼▼ Extremt överköpt" : latestRsi > 65 ? "▼ Överköpt" : latestRsi >= 50 ? "● Svagt bullish" : "● Svagt bearish")
         : "–",
     },
     {
-      label: "MACD (EMA12 vs EMA26)",
-      value: latestEma12 && latestEma26 ? `${latestEma12 > latestEma26 ? "+" : ""}${(latestEma12 - latestEma26).toFixed(2)}` : "–",
-      score: latestEma12 && latestEma26 ? (latestEma12 > latestEma26 ? 1 : -1) : 0,
-      signalText: latestEma12 && latestEma26 ? (latestEma12 > latestEma26 ? "▲ Positiv (bullish)" : "▼ Negativ (bearish)") : "–",
-    },
-    {
       label: "Bollinger Bands (20d)",
-      value: bb && currentPrice ? `${(bb.upper - bb.lower > 0 ? ((currentPrice - bb.lower) / (bb.upper - bb.lower) * 100).toFixed(0) : "50")}% i bandet` : "–",
-      score: bb && currentPrice ? (currentPrice < bb.lower ? 1 : currentPrice > bb.upper ? -1 : 0) : 0,
+      value: bbPos !== null ? `${(bbPos * 100).toFixed(0)}% i bandet` : "–",
+      score: bb && currentPrice ? (currentPrice < bb.lower ? 2 : bbPos < 0.2 ? 1 : currentPrice > bb.upper ? -2 : bbPos > 0.8 ? -1 : 0) : 0,
       signalText: bb && currentPrice
-        ? (currentPrice < bb.lower ? "▲ Positiv (under nedre band)" : currentPrice > bb.upper ? "▼ Negativ (över övre band)" : "● Neutral (inom band)")
+        ? (currentPrice < bb.lower ? "▲▲ Under nedre band" : bbPos < 0.2 ? "▲ Nära nedre band" : currentPrice > bb.upper ? "▼▼ Över övre band" : bbPos > 0.8 ? "▼ Nära övre band" : "● Inom band")
         : "–",
     },
     {
       label: "Fear & Greed (Sentiment)",
       value: typeof sentimentValue === "number" ? `${sentimentValue}/100` : "–",
-      score: typeof sentimentValue === "number" ? (sentimentValue <= 24 ? 1 : sentimentValue >= 76 ? -1 : 0) : 0,
+      score: typeof sentimentValue === "number" ? (sentimentValue <= 15 ? 2 : sentimentValue <= 30 ? 1 : sentimentValue >= 85 ? -2 : sentimentValue >= 70 ? -1 : 0) : 0,
       signalText: typeof sentimentValue === "number"
-        ? (sentimentValue <= 24 ? "▲ Positiv (extrem rädsla)" : sentimentValue >= 76 ? "▼ Negativ (extrem girighet)" : "● Neutral")
+        ? (sentimentValue <= 15 ? "▲▲ Extrem panik" : sentimentValue <= 30 ? "▲ Rädsla" : sentimentValue >= 85 ? "▼▼ Extrem eufori" : sentimentValue >= 70 ? "▼ Girighet" : "● Neutral")
         : "–",
     },
   ];
@@ -528,65 +672,116 @@ function renderSourcesCard(latestSma7, latestSma25, latestRsi, sentimentValue, l
   });
 }
 
-function buildSignal(latestSma7, latestSma25, latestRsi, change24h, sentimentValue, latestEma12, latestEma26, bb, currentPrice) {
+function buildSignal(latestRsi, change24h, sentimentValue, latestEma12, latestEma26, bb, currentPrice, volumes) {
   const reasons = [];
   let score = 0;
+  const maxScore = 10;
 
-  if (latestSma7 !== null && latestSma25 !== null) {
-    if (latestSma7 > latestSma25) {
-      score += 1;
-      reasons.push({ score: 1, text: `▲ SMA7 (${fmtUsd(latestSma7)}) > SMA25 (${fmtUsd(latestSma25)}) → uppåttrend, "golden cross".` });
-    } else {
-      score -= 1;
-      reasons.push({ score: -1, text: `▼ SMA7 (${fmtUsd(latestSma7)}) < SMA25 (${fmtUsd(latestSma25)}) → nedåttrend, "death cross".` });
-    }
-  }
-
-  if (latestRsi !== null) {
-    if (latestRsi < 30) {
-      score += 1;
-      reasons.push({ score: 1, text: `▲ RSI ${latestRsi.toFixed(1)} (under 30) → översåld, möjlig rekyl uppåt.` });
-    } else if (latestRsi > 70) {
-      score -= 1;
-      reasons.push({ score: -1, text: `▼ RSI ${latestRsi.toFixed(1)} (över 70) → överköpt, möjlig rekyl nedåt.` });
-    } else {
-      reasons.push({ score: 0, text: `● RSI ${latestRsi.toFixed(1)} → neutralt läge (30–70).` });
-    }
-  }
-
+  // 1) MACD-histogram (ersätter dubblerad SMA+EMA) — graderat efter avstånd
   if (latestEma12 !== null && latestEma26 !== null) {
-    if (latestEma12 > latestEma26) {
+    const macdLine = latestEma12 - latestEma26;
+    const macdPct = (macdLine / latestEma26) * 100;
+    if (macdPct > 1.5) {
+      score += 2;
+      reasons.push({ score: 2, text: `▲▲ MACD starkt positiv (${macdPct.toFixed(2)}%) → stark bullish momentum.` });
+    } else if (macdPct > 0.3) {
       score += 1;
-      reasons.push({ score: 1, text: `▲ EMA12 (${fmtUsd(latestEma12)}) > EMA26 (${fmtUsd(latestEma26)}) → positiv momentum, MACD bullish.` });
-    } else {
+      reasons.push({ score: 1, text: `▲ MACD positiv (${macdPct.toFixed(2)}%) → svagt bullish momentum.` });
+    } else if (macdPct < -1.5) {
+      score -= 2;
+      reasons.push({ score: -2, text: `▼▼ MACD starkt negativ (${macdPct.toFixed(2)}%) → stark bearish momentum.` });
+    } else if (macdPct < -0.3) {
       score -= 1;
-      reasons.push({ score: -1, text: `▼ EMA12 (${fmtUsd(latestEma12)}) < EMA26 (${fmtUsd(latestEma26)}) → negativ momentum, MACD bearish.` });
+      reasons.push({ score: -1, text: `▼ MACD negativ (${macdPct.toFixed(2)}%) → svagt bearish momentum.` });
+    } else {
+      reasons.push({ score: 0, text: `● MACD nära noll (${macdPct.toFixed(2)}%) → inget tydligt momentum.` });
     }
   }
 
+  // 2) RSI — graderad skala med krypto-anpassade trösklar
+  if (latestRsi !== null) {
+    if (latestRsi < 20) {
+      score += 2;
+      reasons.push({ score: 2, text: `▲▲ RSI ${latestRsi.toFixed(1)} (under 20) → extremt översåld, stark köpsignal.` });
+    } else if (latestRsi < 35) {
+      score += 1;
+      reasons.push({ score: 1, text: `▲ RSI ${latestRsi.toFixed(1)} (under 35) → översåld zon.` });
+    } else if (latestRsi > 80) {
+      score -= 2;
+      reasons.push({ score: -2, text: `▼▼ RSI ${latestRsi.toFixed(1)} (över 80) → extremt överköpt, stark säljsignal.` });
+    } else if (latestRsi > 65) {
+      score -= 1;
+      reasons.push({ score: -1, text: `▼ RSI ${latestRsi.toFixed(1)} (över 65) → överköpt zon.` });
+    } else if (latestRsi >= 50) {
+      score += 0.3;
+      reasons.push({ score: 0.3, text: `● RSI ${latestRsi.toFixed(1)} → svagt bullish (över 50).` });
+    } else {
+      score -= 0.3;
+      reasons.push({ score: -0.3, text: `● RSI ${latestRsi.toFixed(1)} → svagt bearish (under 50).` });
+    }
+  }
+
+  // 3) Bollinger Bands — kontinuerlig position istället för binär
   if (bb !== null && currentPrice !== null) {
+    const bbRange = bb.upper - bb.lower;
+    const bbPos = bbRange > 0 ? (currentPrice - bb.lower) / bbRange : 0.5;
     if (currentPrice < bb.lower) {
+      score += 2;
+      reasons.push({ score: 2, text: `▲▲ Pris (${fmtUsd(currentPrice)}) under Bollingers nedre band (${fmtUsd(bb.lower)}) → starkt översålt.` });
+    } else if (bbPos < 0.2) {
       score += 1;
-      reasons.push({ score: 1, text: `▲ Pris (${fmtUsd(currentPrice)}) under Bollingers nedre band (${fmtUsd(bb.lower)}) → potentiellt översålt.` });
+      reasons.push({ score: 1, text: `▲ Pris nära nedre Bollinger (${(bbPos * 100).toFixed(0)}%) → potentiellt översålt.` });
     } else if (currentPrice > bb.upper) {
+      score -= 2;
+      reasons.push({ score: -2, text: `▼▼ Pris (${fmtUsd(currentPrice)}) över Bollingers övre band (${fmtUsd(bb.upper)}) → starkt överköpt.` });
+    } else if (bbPos > 0.8) {
       score -= 1;
-      reasons.push({ score: -1, text: `▼ Pris (${fmtUsd(currentPrice)}) över Bollingers övre band (${fmtUsd(bb.upper)}) → potentiellt överköpt.` });
+      reasons.push({ score: -1, text: `▼ Pris nära övre Bollinger (${(bbPos * 100).toFixed(0)}%) → potentiellt överköpt.` });
     } else {
-      const bbRange = bb.upper - bb.lower;
-      const pct = bbRange > 0 ? ((currentPrice - bb.lower) / bbRange * 100).toFixed(0) : "50";
-      reasons.push({ score: 0, text: `● Pris inom Bollingers band (${pct}% från nedre kant) → neutralt.` });
+      reasons.push({ score: 0, text: `● Pris mitt i Bollingers band (${(bbPos * 100).toFixed(0)}%) → neutralt.` });
     }
   }
 
+  // 4) Sentiment — graderad med fler nivåer
   if (typeof sentimentValue === "number") {
-    if (sentimentValue <= 24) {
+    if (sentimentValue <= 15) {
+      score += 2;
+      reasons.push({ score: 2, text: `▲▲ Sentiment: Extrem panik (${sentimentValue}/100) → stark contrarian köpsignal.` });
+    } else if (sentimentValue <= 30) {
       score += 1;
-      reasons.push({ score: 1, text: `▲ Sentiment: Extrem rädsla (${sentimentValue}/100) → contrarian köpsignal.` });
-    } else if (sentimentValue >= 76) {
+      reasons.push({ score: 1, text: `▲ Sentiment: Rädsla (${sentimentValue}/100) → contrarian köpsignal.` });
+    } else if (sentimentValue >= 85) {
+      score -= 2;
+      reasons.push({ score: -2, text: `▼▼ Sentiment: Extrem eufori (${sentimentValue}/100) → stark contrarian säljsignal.` });
+    } else if (sentimentValue >= 70) {
       score -= 1;
-      reasons.push({ score: -1, text: `▼ Sentiment: Extrem girighet (${sentimentValue}/100) → varningssignal om möjlig topp.` });
+      reasons.push({ score: -1, text: `▼ Sentiment: Girighet (${sentimentValue}/100) → varningssignal.` });
     } else {
-      reasons.push({ score: 0, text: `● Sentiment: ${sentimentValue}/100 → varken extrem rädsla eller girighet.` });
+      reasons.push({ score: 0, text: `● Sentiment: ${sentimentValue}/100 → neutralt.` });
+    }
+  }
+
+  // 5) Volymindikator — bekräftar rådande trend baserat på prisrörelse
+  const baseScore = score;
+  if (volumes && volumes.length >= 21) {
+    const todayVol = volumes[volumes.length - 1];
+    const avg20 = volumes.slice(volumes.length - 21, volumes.length - 1).reduce((a, b) => a + b, 0) / 20;
+    if (avg20 > 0) {
+      const volRatio = todayVol / avg20;
+      const trendDir = typeof change24h === "number" ? (change24h > 0 ? 1 : change24h < 0 ? -1 : 0) : (baseScore > 0 ? 1 : baseScore < 0 ? -1 : 0);
+      if (volRatio > 2.0 && trendDir !== 0) {
+        const volScore = trendDir * 2;
+        score += volScore;
+        reasons.push({ score: volScore, text: `${volScore > 0 ? "▲▲" : "▼▼"} Volym ${volRatio.toFixed(1)}x över 20d-snitt → stark bekräftelse av ${trendDir > 0 ? "uppåt" : "nedåt"}rörelse.` });
+      } else if (volRatio > 1.3 && trendDir !== 0) {
+        const volScore = trendDir;
+        score += volScore;
+        reasons.push({ score: volScore, text: `${volScore > 0 ? "▲" : "▼"} Volym ${volRatio.toFixed(1)}x över 20d-snitt → bekräftar ${trendDir > 0 ? "uppåt" : "nedåt"}rörelse.` });
+      } else if (volRatio < 0.5) {
+        reasons.push({ score: 0, text: `● Volym ${volRatio.toFixed(1)}x under 20d-snitt → lågt intresse, svag signal.` });
+      } else {
+        reasons.push({ score: 0, text: `● Volym ${volRatio.toFixed(1)}x av 20d-snitt → normal aktivitet.` });
+      }
     }
   }
 
@@ -595,14 +790,158 @@ function buildSignal(latestSma7, latestSma25, latestRsi, change24h, sentimentVal
   }
   reasons.push({ score: 0, text: "⚠ Historiska mönster är inga garantier för framtida utveckling." });
 
+  // Normalisera score till -100 / +100 skala
+  const normalized = Math.round(Math.max(-100, Math.min(100, (score / maxScore) * 100)));
   const bullCount = reasons.filter(r => r.score > 0).length;
   const bearCount = reasons.filter(r => r.score < 0).length;
-  const summary   = `${bullCount} köp, ${bearCount} sälj`;
+  const absNorm = Math.abs(normalized);
 
-  if (score >= 3)       setSignal("buy",  `Möjligt köpläge  ·  ${summary}`, reasons);
-  else if (score <= -3) setSignal("sell", `Möjligt säljläge  ·  ${summary}`, reasons);
-  else                  setSignal("hold", `Avvakta / neutralt  ·  ${summary}`, reasons);
+  let type, label;
+  if (normalized >= 50) {
+    type = "buy";
+    label = `Starkt köpläge (${normalized})`;
+  } else if (normalized >= 20) {
+    type = "buy";
+    label = `Köpläge (${normalized})`;
+  } else if (normalized <= -50) {
+    type = "sell";
+    label = `Starkt säljläge (${normalized})`;
+  } else if (normalized <= -20) {
+    type = "sell";
+    label = `Säljläge (${normalized})`;
+  } else if (normalized > 5) {
+    type = "hold";
+    label = `Svagt positivt (${normalized})`;
+  } else if (normalized < -5) {
+    type = "hold";
+    label = `Svagt negativt (${normalized})`;
+  } else {
+    type = "hold";
+    label = `Neutralt (${normalized})`;
+  }
+
+  const summary = `${bullCount} köp, ${bearCount} sälj`;
+  setSignal(type, `${label}  ·  ${summary}`, reasons);
 }
+
+// ─── Multi-timeframe TA ───────────────────────────────────────────────────
+
+let rawPrices = null;
+let rawVolumes = null;
+let activeTimeframe = "1d";
+
+function aggregateWeekly(prices, volumes) {
+  const weeklyPrices = [];
+  const weeklyVolumes = [];
+  for (let i = 0; i < prices.length; i += 7) {
+    const weekPrices = prices.slice(i, Math.min(i + 7, prices.length));
+    const weekVols = volumes.slice(i, Math.min(i + 7, prices.length));
+    weeklyPrices.push(weekPrices[weekPrices.length - 1]);
+    weeklyVolumes.push(weekVols.reduce((a, b) => a + b, 0));
+  }
+  return { prices: weeklyPrices, volumes: weeklyVolumes };
+}
+
+function updateIndicatorsForTimeframe(tf) {
+  if (!rawPrices || !rawVolumes) return;
+  activeTimeframe = tf;
+
+  let prices, volumes;
+  const suffix = tf === "1w" ? "v" : "d";
+
+  if (tf === "1w") {
+    const agg = aggregateWeekly(rawPrices, rawVolumes);
+    prices = agg.prices;
+    volumes = agg.volumes;
+  } else {
+    prices = rawPrices;
+    volumes = rawVolumes;
+  }
+
+  const latestSma7  = sma(prices, 7);
+  const latestSma25 = sma(prices, 25);
+  const latestRsi   = rsi(prices, 14);
+  const latestEma12 = ema(prices, 12);
+  const latestEma26 = ema(prices, 26);
+  const bb          = bollingerBands(prices, 20);
+
+  els.sma7.textContent  = latestSma7  != null ? fmtUsd(latestSma7)  : "Otillräcklig data";
+  els.sma25.textContent = latestSma25 != null ? fmtUsd(latestSma25) : "Otillräcklig data";
+  els.rsi.textContent   = latestRsi   != null ? latestRsi.toFixed(1) : "Otillräcklig data";
+  els.ema12.textContent = latestEma12 != null ? fmtUsd(latestEma12) : "Otillräcklig data";
+  els.ema26.textContent = latestEma26 != null ? fmtUsd(latestEma26) : "Otillräcklig data";
+
+  if (latestEma12 && latestEma26) {
+    const macdValue = latestEma12 - latestEma26;
+    els.macdVal.textContent = `${macdValue >= 0 ? "+" : ""}${macdValue.toFixed(2)}`;
+    els.macdVal.className   = `value ${macdValue >= 0 ? "up" : "down"}`;
+  } else {
+    els.macdVal.textContent = "Otillräcklig data";
+    els.macdVal.className   = "value";
+  }
+
+  if (bb) {
+    els.bbUpper.textContent = fmtUsd(bb.upper);
+    els.bbMid.textContent   = fmtUsd(bb.mid);
+    els.bbLower.textContent = fmtUsd(bb.lower);
+  } else {
+    els.bbUpper.textContent = "Otillräcklig data";
+    els.bbMid.textContent   = "Otillräcklig data";
+    els.bbLower.textContent = "Otillräcklig data";
+  }
+
+  if (volumes.length >= 8) {
+    const todayVol = volumes[volumes.length - 1];
+    const avg7     = volumes.slice(volumes.length - 8, volumes.length - 1).reduce((a, b) => a + b, 0) / 7;
+    if (avg7 > 0) {
+      const volChg   = ((todayVol - avg7) / avg7) * 100;
+      els.volumeTrend.textContent = `${fmtPct(volChg)} vs 7-${suffix === "v" ? "veckors" : "dagars"} snitt`;
+      els.volumeTrend.className   = `value ${volChg >= 0 ? "up" : "down"}`;
+    } else {
+      els.volumeTrend.textContent = "Ingen volymdata";
+    }
+  } else {
+    els.volumeTrend.textContent = "Otillräcklig data";
+  }
+
+  // Uppdatera indikator-labels för vald tidsram
+  const periodLabel = (n) => `${n} ${suffix === "v" ? "veckor" : "dagar"}`;
+  const indicatorLabels = {
+    sma7:       `SMA 7 ${periodLabel(7)}`,
+    sma25:      `SMA 25 ${periodLabel(25)}`,
+    rsi:        `RSI (14 ${suffix === "v" ? "veckor" : "perioder"})`,
+    ema12:      `EMA 12 ${periodLabel(12)}`,
+    ema26:      `EMA 26 ${periodLabel(26)}`,
+    "macd-val": `MACD (EMA12 − EMA26)`,
+    "bb-upper": `Bollinger Övre (20${suffix})`,
+    "bb-mid":   `Bollinger Mitten (20${suffix})`,
+    "bb-lower": `Bollinger Nedre (20${suffix})`,
+  };
+
+  for (const [id, text] of Object.entries(indicatorLabels)) {
+    const el = document.getElementById(id);
+    if (el) {
+      const labelEl = el.closest(".indicator")?.querySelector(".label");
+      if (labelEl) labelEl.textContent = text;
+    }
+  }
+
+  // Uppdatera tab-styling
+  document.querySelectorAll("#timeframe-tabs .timeframe-tab").forEach(tab => {
+    if (tab.dataset.tf === tf) {
+      tab.classList.add("timeframe-tab-active");
+    } else {
+      tab.classList.remove("timeframe-tab-active");
+    }
+  });
+}
+
+// Timeframe tab event listeners
+document.querySelectorAll("#timeframe-tabs .timeframe-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    updateIndicatorsForTimeframe(tab.dataset.tf);
+  });
+});
 
 // ─── Graf (med MA50 och MA200) ─────────────────────────────────────────────
 
@@ -746,41 +1085,44 @@ const ANALYST_FORECASTS = {
 };
 
 const FORECAST_WEIGHTS = {
-  7:   { A: 0.25, B: 0.35, C: 0.40, D: 0 },
-  30:  { A: 0.30, B: 0.30, C: 0.30, D: 0.10 },
-  365: { A: 0.20, B: 0.20, C: 0.20, D: 0.40 },
-  730: { A: 0.15, B: 0.15, C: 0.15, D: 0.55 },
+  7:   { A: 0.20, B: 0.25, C: 0.30, D: 0,    E: 0.25 },
+  30:  { A: 0.20, B: 0.20, C: 0.25, D: 0.10, E: 0.25 },
+  365: { A: 0.15, B: 0.15, C: 0.15, D: 0.40, E: 0.15 },
+  730: { A: 0.10, B: 0.10, C: 0.10, D: 0.55, E: 0.15 },
 };
 
 function forecastLinearRegression(prices, daysAhead) {
   const n = prices.length;
   if (n < 2) return null;
+  // Use log-linear regression to model percentage growth (prevents negative prices)
+  const logPrices = prices.map(p => p > 0 ? Math.log(p) : null).filter(v => v !== null);
+  const m = logPrices.length;
+  if (m < 2) return null;
   let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-  for (let i = 0; i < n; i++) {
-    sumX += i; sumY += prices[i];
-    sumXY += i * prices[i]; sumXX += i * i;
+  for (let i = 0; i < m; i++) {
+    sumX += i; sumY += logPrices[i];
+    sumXY += i * logPrices[i]; sumXX += i * i;
   }
-  const xMean = sumX / n;
-  const yMean = sumY / n;
-  const SSxx = sumXX - n * xMean * xMean;
-  const SSxy = sumXY - n * xMean * yMean;
+  const xMean = sumX / m;
+  const yMean = sumY / m;
+  const SSxx = sumXX - m * xMean * xMean;
+  const SSxy = sumXY - m * xMean * yMean;
   if (SSxx === 0) return null;
   const slope = SSxy / SSxx;
   const intercept = yMean - slope * xMean;
-  const forecastDay = n + daysAhead;
-  const forecastPrice = intercept + slope * forecastDay;
-  // Residual standard error
+  const forecastDay = m + daysAhead;
+  const forecastPrice = Math.exp(intercept + slope * forecastDay);
   let ssRes = 0;
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < m; i++) {
     const predicted = intercept + slope * i;
-    ssRes += Math.pow(prices[i] - predicted, 2);
+    ssRes += Math.pow(logPrices[i] - predicted, 2);
   }
-  const residualStd = n > 2 ? Math.sqrt(ssRes / (n - 2)) : 0;
-  const margin = residualStd * Math.sqrt(1 + 1 / n + Math.pow(forecastDay - xMean, 2) / SSxx) * 1.96;
+  const residualStd = m > 2 ? Math.sqrt(ssRes / (m - 2)) : 0;
+  const logMargin = residualStd * Math.sqrt(1 + 1 / m + Math.pow(forecastDay - xMean, 2) / SSxx) * 1.96;
   return {
     price: forecastPrice,
-    upper: forecastPrice + margin,
-    lower: Math.max(0, forecastPrice - margin),
+    upper: Math.exp(Math.log(forecastPrice) + logMargin),
+    lower: Math.max(0, Math.exp(Math.log(forecastPrice) - logMargin)),
   };
 }
 
@@ -788,6 +1130,8 @@ function forecastHolts(prices, daysAhead) {
   const n = prices.length;
   if (n < 2) return null;
   const alpha = 0.3, beta = 0.1;
+  // Dampen trend for long horizons to prevent runaway extrapolation
+  const dampingFactor = daysAhead >= 365 ? 0.95 : 1.0;
   const initEnd = Math.min(29, n - 1);
   let level = prices[0];
   let trend = (prices[initEnd] - prices[0]) / Math.min(30, n);
@@ -799,7 +1143,19 @@ function forecastHolts(prices, daysAhead) {
     const predicted = prevLevel + trend;
     errors.push(prices[i] - predicted);
   }
-  const forecastPrice = level + trend * daysAhead;
+  let forecastPrice;
+  if (dampingFactor < 1) {
+    let dampedSum = 0;
+    let dampPow = dampingFactor;
+    for (let h = 0; h < daysAhead; h++) {
+      dampedSum += dampPow;
+      dampPow *= dampingFactor;
+    }
+    forecastPrice = level + trend * dampedSum;
+  } else {
+    forecastPrice = level + trend * daysAhead;
+  }
+  forecastPrice = Math.max(prices[n - 1] * 0.1, forecastPrice);
   const errorStd = errors.length > 0
     ? Math.sqrt(errors.reduce((s, e) => s + e * e, 0) / errors.length)
     : 0;
@@ -887,14 +1243,39 @@ function forecastMomentum(prices, currentPrice, indicators, daysAhead) {
   };
 }
 
+function forecastMeanReversion(prices, currentPrice, daysAhead) {
+  const n = prices.length;
+  if (n < 30) return null;
+  const lookback = Math.min(n, daysAhead <= 30 ? 90 : 365);
+  const recent = prices.slice(-lookback).filter(p => p > 0);
+  if (recent.length < 20) return null;
+  const geoMean = Math.exp(recent.reduce((s, p) => s + Math.log(p), 0) / recent.length);
+  const halfLife = daysAhead <= 7 ? 14 : daysAhead <= 30 ? 30 : daysAhead <= 365 ? 120 : 200;
+  const reversionSpeed = 1 - Math.exp(-daysAhead / halfLife);
+  const forecastPrice = currentPrice + (geoMean - currentPrice) * reversionSpeed;
+  const returns = [];
+  for (let i = 1; i < recent.length; i++) {
+    returns.push(recent[i] / recent[i - 1] - 1);
+  }
+  const dailyVol = returns.length > 0
+    ? Math.sqrt(returns.reduce((s, r) => s + r * r, 0) / returns.length)
+    : 0;
+  const margin = currentPrice * dailyVol * Math.sqrt(daysAhead) * 1.2;
+  return {
+    price: Math.max(currentPrice * 0.1, forecastPrice),
+    upper: forecastPrice + margin,
+    lower: Math.max(0, forecastPrice - margin),
+  };
+}
+
 function forecastConsensus(daysAhead) {
   const horizonData = ANALYST_FORECASTS.horizons[daysAhead];
   if (!horizonData) return null;
   const analysts = horizonData.analysts;
   if (!analysts || analysts.length === 0) return null;
   const avgPrice = analysts.reduce((s, a) => s + a.avg, 0) / analysts.length;
-  const low = Math.min(...analysts.map(a => a.low));
-  const high = Math.max(...analysts.map(a => a.high));
+  const low = arrayMin(analysts.map(a => a.low));
+  const high = arrayMax(analysts.map(a => a.high));
   return {
     price: avgPrice,
     upper: high,
@@ -924,11 +1305,14 @@ function calculateForecasts(prices, currentPrice, indicators) {
     // Method D: Consensus (only for 365d and 730d effectively)
     methods.D = forecastConsensus(daysAhead);
 
-    // Redistribute weights if a method returns null
+    // Method E: Mean-reversion
+    methods.E = forecastMeanReversion(prices, currentPrice, daysAhead);
+
+    // Redistribute weights if a method returns null or gives non-positive price
     let totalWeight = 0;
     const activeWeights = {};
-    for (const key of ["A", "B", "C", "D"]) {
-      if (methods[key] != null) {
+    for (const key of ["A", "B", "C", "D", "E"]) {
+      if (methods[key] != null && methods[key].price > 0) {
         activeWeights[key] = weights[key];
         totalWeight += weights[key];
       }
@@ -973,21 +1357,28 @@ function calculateForecasts(prices, currentPrice, indicators) {
     wPrice = Math.max(0, wPrice);
     wLower = Math.max(0, wLower);
 
-    // Confidence level
+    // Confidence level — crypto-adjusted thresholds per horizon
     const spreadPct = currentPrice > 0 ? (wUpper - wLower) / currentPrice * 100 : 100;
+    const confThresholds = {
+      7:   { high: 20, medium: 50,  low: 100 },
+      30:  { high: 40, medium: 80,  low: 150 },
+      365: { high: 80, medium: 150, low: 300 },
+      730: { high: 100, medium: 200, low: 400 },
+    };
+    const thresh = confThresholds[daysAhead] || confThresholds[365];
     let confidenceLevel, confidenceClass;
-    if (spreadPct < 15) {
+    if (spreadPct < thresh.high) {
       confidenceLevel = "Hög"; confidenceClass = "forecast-conf-high";
-    } else if (spreadPct < 40) {
+    } else if (spreadPct < thresh.medium) {
       confidenceLevel = "Medel"; confidenceClass = "forecast-conf-medium";
-    } else if (spreadPct < 80) {
+    } else if (spreadPct < thresh.low) {
       confidenceLevel = "Låg"; confidenceClass = "forecast-conf-low";
     } else {
       confidenceLevel = "Mycket låg"; confidenceClass = "forecast-conf-verylow";
     }
 
-    // Confidence bar position (0-100)
-    const confBarPct = Math.max(0, Math.min(100, 100 - spreadPct));
+    // Confidence bar position (0-100), scaled to crypto thresholds
+    const confBarPct = Math.max(0, Math.min(100, 100 - (spreadPct / thresh.low) * 100));
 
     results[daysAhead] = {
       price: wPrice,
@@ -1003,6 +1394,7 @@ function calculateForecasts(prices, currentPrice, indicators) {
         B: methods.B ? { price: methods.B.price, weight: activeWeights.B || 0 } : null,
         C: methods.C ? { price: methods.C.price, weight: activeWeights.C || 0 } : null,
         D: methods.D ? { price: methods.D.price, weight: activeWeights.D || 0, analysts: methods.D.analysts, year: methods.D.year } : null,
+        E: methods.E ? { price: methods.E.price, weight: activeWeights.E || 0 } : null,
       },
       daysAhead,
     };
@@ -1143,6 +1535,7 @@ function renderForecastTab(horizon) {
     B: "Holt's utjämning",
     C: "MA-momentum",
     D: "Konsensus",
+    E: "Mean-reversion",
   };
 
   const methodsBox = document.createElement("div");
@@ -1152,7 +1545,7 @@ function renderForecastTab(horizon) {
   methodsTitle.textContent = "Metod-breakdown";
   methodsBox.appendChild(methodsTitle);
 
-  for (const key of ["A", "B", "C", "D"]) {
+  for (const key of ["A", "B", "C", "D", "E"]) {
     const m = fc.methods[key];
     if (!m) continue;
     const row = document.createElement("div");
@@ -1216,8 +1609,8 @@ function renderForecastTab(horizon) {
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
-    const allLow = Math.min(...fc.methods.D.analysts.map(a => a.low));
-    const allHigh = Math.max(...fc.methods.D.analysts.map(a => a.high));
+    const allLow = arrayMin(fc.methods.D.analysts.map(a => a.low));
+    const allHigh = arrayMax(fc.methods.D.analysts.map(a => a.high));
     const range = allHigh - allLow;
 
     fc.methods.D.analysts.forEach(analyst => {
@@ -1446,6 +1839,7 @@ document.querySelectorAll(".forecast-tab").forEach(tab => {
 // ─── Datahämtning ──────────────────────────────────────────────────────────
 
 let lastBinancePrice = null;
+let lastBestStakingApy = null;
 
 async function loadBinancePrice() {
   try {
@@ -1480,6 +1874,57 @@ async function loadSentiment() {
   }
 }
 
+// ─── Layer 2 TVL Breakdown ────────────────────────────────────────────────
+
+const L2_CHAINS = [
+  { name: "Arbitrum One", color: "#28A0F0" },
+  { name: "Optimism",     color: "#FF0420" },
+  { name: "Base",         color: "#0052FF" },
+  { name: "zkSync Era",   color: "#8C8DFC" },
+  { name: "Polygon zkEVM", color: "#8247E5" },
+];
+
+function renderL2Breakdown(chains) {
+  const matched = L2_CHAINS
+    .map(l2 => {
+      const chain = chains.find(c => c.name === l2.name);
+      return chain ? { name: l2.name, color: l2.color, tvl: chain.tvl ?? 0 } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.tvl - a.tvl);
+
+  if (matched.length === 0) {
+    els.l2TotalTvl.textContent = "Ej tillgangligt";
+    return;
+  }
+
+  const totalL2 = matched.reduce((sum, c) => sum + c.tvl, 0);
+  els.l2TotalTvl.textContent = fmtLarge(totalL2);
+
+  els.l2Bar.textContent = "";
+  els.l2Legend.textContent = "";
+
+  matched.forEach(chain => {
+    const pct = totalL2 > 0 ? (chain.tvl / totalL2) * 100 : 0;
+
+    const seg = document.createElement("div");
+    seg.className = "l2-segment";
+    seg.style.width = `${pct}%`;
+    seg.style.backgroundColor = chain.color;
+    seg.textContent = pct > 8 ? `${pct.toFixed(1)}%` : "";
+    els.l2Bar.appendChild(seg);
+
+    const item = document.createElement("span");
+    item.className = "l2-legend-item";
+    const dot = document.createElement("span");
+    dot.className = "l2-dot";
+    dot.style.backgroundColor = chain.color;
+    item.appendChild(dot);
+    item.appendChild(document.createTextNode(` ${chain.name} ${fmtLarge(chain.tvl)} (${pct.toFixed(1)}%)`));
+    els.l2Legend.appendChild(item);
+  });
+}
+
 // ─── DeFi & Staking (DefiLlama) ───────────────────────────────────────────
 
 async function loadDefi() {
@@ -1510,6 +1955,9 @@ async function loadDefi() {
       els.defiTvlChange.textContent = "–";
     }
 
+    // Layer 2 TVL Breakdown (använder samma chains-data)
+    renderL2Breakdown(chains);
+
     // Top 5 staking-protokoll på Ethereum
     const poolsData = Array.isArray(pools?.data) ? pools.data : [];
     const stakingPools = poolsData
@@ -1522,6 +1970,19 @@ async function loadDefi() {
       )
       .sort((a, b) => (b.tvlUsd || 0) - (a.tvlUsd || 0))
       .slice(0, 5);
+
+    // Spara bästa APY för staking dashboard
+    const allStakingApys = poolsData
+      .filter(p =>
+        p.chain === "Ethereum" &&
+        p.category &&
+        p.category.toLowerCase().includes("staking") &&
+        typeof p.apy === "number" &&
+        p.apy > 0 &&
+        p.apy < 100
+      )
+      .map(p => p.apy);
+    lastBestStakingApy = allStakingApys.length > 0 ? Math.max(...allStakingApys) : null;
 
     els.stakingList.textContent = "";
     if (stakingPools.length === 0) {
@@ -1980,7 +2441,8 @@ async function loadData() {
   try {
     // Parallellhämtar alla datakällor för att minimera laddningstid.
     // 365 dagars historik krävs för MA200 och säkrare motstånd/stöddetektering.
-    const [simple, marketsArr, market, , sentimentValue, , , , ,] = await Promise.all([
+    // Promise.allSettled säkerställer att enskilda API-fel inte kraschar hela dashboarden.
+    const results = await Promise.allSettled([
       fetchJson(`${COINGECKO_BASE}/simple/price?ids=ethereum&vs_currencies=usd,sek&include_24hr_change=true&include_last_updated_at=true`),
       fetchJson(`${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=ethereum&per_page=1&page=1&price_change_percentage=7d,30d`),
       fetchJson(`${COINGECKO_BASE}/coins/ethereum/market_chart?vs_currency=usd&days=365&interval=daily`),
@@ -1991,21 +2453,41 @@ async function loadData() {
       loadNews(),
     ]);
 
+    const settled = results.map((r, i) => {
+      if (r.status === "fulfilled") return r.value;
+      const names = ["simple/price", "markets", "market_chart", "binance", "sentiment", "defi", "correlation", "news"];
+      console.error(`API-anrop ${names[i]} misslyckades:`, r.reason);
+      return null;
+    });
+
+    const simple         = settled[0];
+    const marketsArr     = settled[1];
+    const market         = settled[2];
+    const sentimentValue = settled[4];
+
+    // Om kritiska CoinGecko-anrop misslyckades, visa felmeddelande men krascha inte
+    if (!simple || !market) {
+      els.signalBadge.textContent = "Ofullständig data – vissa API:er svarar inte";
+      els.signalBadge.className   = "signal-badge signal-error";
+    }
+
     // 1) Aktuellt pris
-    const eth          = simple.ethereum;
-    const currentPrice = eth.usd;
-    els.priceUsd.textContent   = fmtUsd(currentPrice);
-    els.priceSek.textContent   = fmtSek(eth.sek);
-    const change24h            = eth.usd_24h_change ?? 0;
-    els.change24h.textContent  = fmtPct(change24h);
-    els.change24h.className    = `price-small ${change24h >= 0 ? "up" : "down"}`;
-    els.lastUpdated.textContent = new Date(eth.last_updated_at * 1000).toLocaleString("sv-SE");
+    const eth          = simple?.ethereum;
+    const currentPrice = eth?.usd ?? null;
+    const change24h    = eth?.usd_24h_change ?? 0;
+    if (eth) {
+      els.priceUsd.textContent   = fmtUsd(currentPrice);
+      els.priceSek.textContent   = fmtSek(eth.sek);
+      els.change24h.textContent  = fmtPct(change24h);
+      els.change24h.className    = `price-small ${change24h >= 0 ? "up" : "down"}`;
+      els.lastUpdated.textContent = new Date(eth.last_updated_at * 1000).toLocaleString("sv-SE");
+    }
 
     // Gas Tracker (behöver ETH-pris för USD-estimat)
-    loadGas(currentPrice).catch(e => console.error("Gas Tracker-fel:", e));
+    if (currentPrice) loadGas(currentPrice).catch(e => console.error("Gas Tracker-fel:", e));
 
     // 2) Marknadsinformation
-    const md = marketsArr[0];
+    const md = marketsArr?.[0];
     if (md) {
       els.marketCap.textContent  = fmtLarge(md.market_cap);
       els.volume24h.textContent  = fmtLarge(md.total_volume);
@@ -2019,86 +2501,180 @@ async function loadData() {
       const athDist              = md.ath_change_percentage ?? 0;
       els.athDistance.textContent = fmtPct(athDist);
       els.athDistance.className  = `value ${athDist >= 0 ? "up" : "down"}`;
+
+      // ETH Tokenomics (supply-data finns i /coins/markets response)
+      const circ = md.circulating_supply;
+      const total = md.total_supply;
+      if (circ) {
+        els.supplyCirculating.textContent = `${(circ / 1e6).toFixed(2)}M ETH`;
+      }
+      if (total) {
+        els.supplyTotal.textContent = `${(total / 1e6).toFixed(2)}M ETH`;
+      }
+      if (circ && total && total > 0) {
+        const stakingPct = ((total - circ) / total) * 100;
+        els.supplyStakingRatio.textContent = stakingPct > 0.01 ? `~${stakingPct.toFixed(1)}%` : "~0%";
+      }
+      if (circ && total) {
+        const netChange = total - circ;
+        const isDeflationary = netChange < 0;
+        els.supplyNetIssuance.textContent = isDeflationary ? "Deflationär (burn > issuance)" : "Svagt inflationär";
+        els.supplyNetIssuance.className = `value ${isDeflationary ? "up" : ""}`;
+      }
+
+      // Staking Dashboard
+      if (circ && total && total > circ) {
+        const estimatedStaked = total - circ;
+        const stakingRatio = (estimatedStaked / total) * 100;
+
+        els.stakingTotalEth.textContent = `~${(estimatedStaked / 1e6).toFixed(2)}M ETH`;
+
+        els.stakingRatioPct.textContent = `${stakingRatio.toFixed(1)}%`;
+        els.stakingRatioPct.className = `value ${stakingRatio > 25 ? "up" : ""}`;
+
+        if (lastBestStakingApy != null) {
+          els.stakingBestApy.textContent = `${lastBestStakingApy.toFixed(2)}%`;
+          els.stakingBestApy.className = "value up";
+        }
+
+        if (stakingRatio > 30) {
+          els.stakingSecurity.textContent = "Stark";
+          els.stakingSecurity.className = "value staking-security-strong";
+        } else if (stakingRatio >= 20) {
+          els.stakingSecurity.textContent = "God";
+          els.stakingSecurity.className = "value staking-security-good";
+        } else {
+          els.stakingSecurity.textContent = "Lag";
+          els.stakingSecurity.className = "value staking-security-low";
+        }
+      }
     }
 
-    // 3) 365-dagars historik → graf + indikatorer + utbrottsanalys
-    const prices  = market.prices.map(([, p]) => p);
-    const volumes = market.total_volumes.map(([, v]) => v);
-    const labels  = market.prices.map(([ts]) =>
-      new Date(ts).toLocaleDateString("sv-SE", { month: "short", day: "numeric" })
-    );
+    // 3) 365-dagars historik -> graf + indikatorer + utbrottsanalys
+    let prices = [], volumes = [], labels = [];
+    let ba = null, latestSma7 = null, latestSma25 = null, latestRsi = null;
+    let latestEma12 = null, latestEma26 = null, bb = null;
+    let ma50val = null, ma200val = null;
 
-    // Beräkna stöd/motstånd innan grafen ritas så linjerna syns direkt
-    const ba = analyzeBreakout(prices, volumes, currentPrice);
-    renderChart(labels, prices, ba.supportLevels, ba.resistanceLevels);
+    if (market) {
+      prices  = market.prices.map(([, p]) => p);
+      volumes = market.total_volumes.map(([, v]) => v);
+      labels  = market.prices.map(([ts]) =>
+        new Date(ts).toLocaleDateString("sv-SE", { month: "short", day: "numeric" })
+      );
 
-    const latestSma7  = sma(prices, 7);
-    const latestSma25 = sma(prices, 25);
-    const latestRsi   = rsi(prices, 14);
-    const latestEma12 = ema(prices, 12);
-    const latestEma26 = ema(prices, 26);
-    const bb          = bollingerBands(prices, 20);
+      // Spara rådata för multi-timeframe TA-växlare
+      rawPrices = prices;
+      rawVolumes = volumes;
 
-    els.sma7.textContent  = latestSma7  != null ? fmtUsd(latestSma7)  : "Otillräcklig data";
-    els.sma25.textContent = latestSma25 != null ? fmtUsd(latestSma25) : "Otillräcklig data";
-    els.rsi.textContent   = latestRsi   != null ? latestRsi.toFixed(1) : "Otillräcklig data";
-    els.ema12.textContent = latestEma12 != null ? fmtUsd(latestEma12) : "Otillräcklig data";
-    els.ema26.textContent = latestEma26 != null ? fmtUsd(latestEma26) : "Otillräcklig data";
+      // Beräkna MA50/MA200 en gång – används av breakout, rendering och prognos
+      ma50val  = sma(prices, 50);
+      ma200val = sma(prices, 200);
 
-    if (latestEma12 && latestEma26) {
-      const macdValue = latestEma12 - latestEma26;
-      els.macdVal.textContent = `${macdValue >= 0 ? "+" : ""}${macdValue.toFixed(2)}`;
-      els.macdVal.className   = `value ${macdValue >= 0 ? "up" : "down"}`;
-    }
+      // Beräkna stöd/motstånd innan grafen ritas så linjerna syns direkt
+      ba = analyzeBreakout(prices, volumes, currentPrice, ma50val, ma200val);
+      renderChart(labels, prices, ba.supportLevels, ba.resistanceLevels);
 
-    if (bb) {
-      els.bbUpper.textContent = fmtUsd(bb.upper);
-      els.bbMid.textContent   = fmtUsd(bb.mid);
-      els.bbLower.textContent = fmtUsd(bb.lower);
-    }
+      latestSma7  = sma(prices, 7);
+      latestSma25 = sma(prices, 25);
+      latestRsi   = rsi(prices, 14);
+      latestEma12 = ema(prices, 12);
+      latestEma26 = ema(prices, 26);
+      bb          = bollingerBands(prices, 20);
 
-    if (volumes.length >= 8) {
-      const todayVol = volumes[volumes.length - 1];
-      const avg7     = volumes.slice(volumes.length - 8, volumes.length - 1).reduce((a, b) => a + b, 0) / 7;
-      if (avg7 > 0) {
-        const volChg   = ((todayVol - avg7) / avg7) * 100;
-        els.volumeTrend.textContent = `${fmtPct(volChg)} vs 7-dagars snitt`;
-        els.volumeTrend.className   = `value ${volChg >= 0 ? "up" : "down"}`;
-      } else {
-        els.volumeTrend.textContent = "Ingen volymdata";
+      els.sma7.textContent  = latestSma7  != null ? fmtUsd(latestSma7)  : "Otillräcklig data";
+      els.sma25.textContent = latestSma25 != null ? fmtUsd(latestSma25) : "Otillräcklig data";
+      els.rsi.textContent   = latestRsi   != null ? latestRsi.toFixed(1) : "Otillräcklig data";
+      els.ema12.textContent = latestEma12 != null ? fmtUsd(latestEma12) : "Otillräcklig data";
+      els.ema26.textContent = latestEma26 != null ? fmtUsd(latestEma26) : "Otillräcklig data";
+
+      if (latestEma12 && latestEma26) {
+        const macdValue = latestEma12 - latestEma26;
+        els.macdVal.textContent = `${macdValue >= 0 ? "+" : ""}${macdValue.toFixed(2)}`;
+        els.macdVal.className   = `value ${macdValue >= 0 ? "up" : "down"}`;
+      }
+
+      if (bb) {
+        els.bbUpper.textContent = fmtUsd(bb.upper);
+        els.bbMid.textContent   = fmtUsd(bb.mid);
+        els.bbLower.textContent = fmtUsd(bb.lower);
+      }
+
+      if (volumes.length >= 8) {
+        const todayVol = volumes[volumes.length - 1];
+        const avg7     = volumes.slice(volumes.length - 8, volumes.length - 1).reduce((a, b) => a + b, 0) / 7;
+        if (avg7 > 0) {
+          const volChg   = ((todayVol - avg7) / avg7) * 100;
+          els.volumeTrend.textContent = `${fmtPct(volChg)} vs 7-dagars snitt`;
+          els.volumeTrend.className   = `value ${volChg >= 0 ? "up" : "down"}`;
+        } else {
+          els.volumeTrend.textContent = "Ingen volymdata";
+        }
+      }
+
+      // 3b) VWAP & Fibonacci
+      const latestVwap = vwap(prices, volumes);
+      if (latestVwap != null) {
+        els.vwapValue.textContent = fmtUsd(latestVwap);
+        const vwapDiff = ((currentPrice - latestVwap) / latestVwap) * 100;
+        const vwapAbove = currentPrice >= latestVwap;
+        els.vwapSignal.textContent = `${vwapAbove ? "Över" : "Under"} VWAP (${fmtPct(vwapDiff)})`;
+        els.vwapSignal.className = `value ${vwapAbove ? "up" : "down"}`;
+      }
+
+      const fibLevelsData = fibonacciLevels(prices, 90);
+      if (fibLevelsData.length && els.fibLevels) {
+        els.fibLevels.innerHTML = "";
+        for (const fib of fibLevelsData) {
+          const row = document.createElement("div");
+          row.className = "fib-level";
+          const isActive = Math.abs(currentPrice - fib.price) / fib.price < 0.03;
+          const labelSpan = document.createElement("span");
+          labelSpan.className = "fib-label";
+          labelSpan.textContent = fib.label;
+          const priceSpan = document.createElement("span");
+          priceSpan.className = `fib-price${isActive ? " fib-active" : ""}`;
+          priceSpan.textContent = fmtUsd(fib.price);
+          row.appendChild(labelSpan);
+          row.appendChild(priceSpan);
+          if (isActive) row.classList.add("fib-active");
+          els.fibLevels.appendChild(row);
+        }
       }
     }
 
     // 4) Källkort + signalscorecard
-    renderSourcesCard(latestSma7, latestSma25, latestRsi, sentimentValue, latestEma12, latestEma26, bb, currentPrice, lastBinancePrice);
+    renderSourcesCard(latestRsi, sentimentValue, latestEma12, latestEma26, bb, currentPrice, lastBinancePrice);
 
-    // 5) Kombinerad köp/sälj-signal (5 faktorer)
-    buildSignal(latestSma7, latestSma25, latestRsi, change24h, sentimentValue, latestEma12, latestEma26, bb, currentPrice);
+    // 5) Kombinerad köp/sälj-signal (5 faktorer, graderad)
+    buildSignal(latestRsi, change24h, sentimentValue, latestEma12, latestEma26, bb, currentPrice, volumes);
 
     // 6) Utbrottsanalys (ba redan beräknad ovan)
-    renderBreakoutAnalysis(ba, prices, currentPrice);
+    if (ba) renderBreakoutAnalysis(ba, currentPrice, ma50val, ma200val);
 
     // 7) Prisprognos (isolerad try-catch så att ett prognosfel inte bryter övrig funktionalitet)
-    try {
-      const forecastIndicators = {
-        sma7: latestSma7, sma25: latestSma25,
-        ema12: latestEma12, ema26: latestEma26,
-        rsi: latestRsi, ma50: sma(prices, 50), ma200: sma(prices, 200),
-        bb: bb, sentimentValue: sentimentValue
-      };
-      const forecasts = calculateForecasts(prices, currentPrice, forecastIndicators);
-      renderForecastCard(forecasts, currentPrice);
-    } catch (forecastErr) {
-      console.error("Prognosberäkning misslyckades:", forecastErr);
-      els.forecastContent.textContent = "";
-      const errDiv = document.createElement("div");
-      errDiv.className = "forecast-unavailable";
-      errDiv.textContent = "Kunde inte beräkna prognoser. Datan uppdateras vid nästa cykel.";
-      els.forecastContent.appendChild(errDiv);
+    if (market && currentPrice) {
+      try {
+        const forecastIndicators = {
+          sma7: latestSma7, sma25: latestSma25,
+          ema12: latestEma12, ema26: latestEma26,
+          rsi: latestRsi, ma50: ma50val, ma200: ma200val,
+          bb: bb, sentimentValue: sentimentValue
+        };
+        const forecasts = calculateForecasts(prices, currentPrice, forecastIndicators);
+        renderForecastCard(forecasts, currentPrice);
+      } catch (forecastErr) {
+        console.error("Prognosberäkning misslyckades:", forecastErr);
+        els.forecastContent.textContent = "";
+        const errDiv = document.createElement("div");
+        errDiv.className = "forecast-unavailable";
+        errDiv.textContent = "Kunde inte beräkna prognoser. Datan uppdateras vid nästa cykel.";
+        els.forecastContent.appendChild(errDiv);
+      }
     }
 
     // 8) Kontrollera prisalarm
-    checkAlarms(currentPrice, latestRsi);
+    if (currentPrice) checkAlarms(currentPrice, latestRsi);
 
   } catch (err) {
     console.error(err);

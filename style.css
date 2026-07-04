@@ -1,3 +1,37 @@
+:root {
+  --color-bg-deep: #0f1320;
+  --color-bg-base: #1a1f33;
+  --color-surface: #1c2236;
+  --color-surface-dark: #151929;
+  --color-border: #2b3252;
+  --color-border-subtle: #1a2040;
+  --color-border-strong: #3b4470;
+  --color-text-primary: #e7e9f0;
+  --color-text-secondary: #c7cdf0;
+  --color-text-muted: #8b91ab;
+  --color-text-faint: #9aa0b4;
+  --color-text-dim: #6b7190;
+  --color-accent: #6dd5ed;
+  --color-accent-alt: #8a9cff;
+  --color-success: #4ce081;
+  --color-success-border: #2ecc71;
+  --color-error: #ff6f61;
+  --color-error-border: #e74c3c;
+  --color-warning: #f4d35e;
+  --color-warning-border: #f1c40f;
+  --color-orange: #f0985a;
+  --color-orange-border: #e67e22;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 999px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -5,8 +39,8 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: linear-gradient(180deg, #0f1320 0%, #1a1f33 100%);
-  color: #e7e9f0;
+  background: linear-gradient(180deg, var(--color-bg-deep) 0%, var(--color-bg-base) 100%);
+  color: var(--color-text-primary);
   min-height: 100vh;
 }
 
@@ -52,11 +86,43 @@ h1 {
 
 .label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8b91ab;
-  margin-bottom: 4px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+/* Focus-visible for all interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Penny stock warning */
+.penny-stock-warning {
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(231, 76, 60, 0.12);
+  border: 2px solid var(--color-error-border);
+  color: var(--color-error);
+  margin-bottom: var(--space-md);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.penny-stock-warning strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: var(--space-xs);
+}
+
+.penny-stock-warning p {
+  margin: 0;
+  color: var(--color-text-faint);
 }
 
 .price-main {
@@ -299,11 +365,11 @@ h1 {
 }
 
 .sc-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8b91ab;
-  margin-bottom: 4px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
   display: block;
 }
 
@@ -318,8 +384,8 @@ h1 {
 .sc-signal {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 0.72rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -331,13 +397,13 @@ h1 {
 
 .ta-badge {
   display: inline-block;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 700;
   padding: 2px 7px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: rgba(138, 156, 255, 0.18);
-  color: #8a9cff;
-  border: 1px solid #8a9cff;
+  color: var(--color-accent-alt);
+  border: 1px solid var(--color-accent-alt);
   vertical-align: middle;
   margin-left: 6px;
   letter-spacing: 0.05em;
@@ -431,6 +497,20 @@ h1 {
   margin-top: 4px;
 }
 
+/* ── Staking Dashboard ──────────────────────────── */
+
+.staking-security-strong {
+  color: var(--color-success);
+}
+
+.staking-security-good {
+  color: var(--color-warning);
+}
+
+.staking-security-low {
+  color: var(--color-error);
+}
+
 /* ── DeFi & Staking ─────────────────────────────── */
 
 .defi-tvl-row {
@@ -470,6 +550,50 @@ h1 {
   font-weight: 700;
   color: #4ce081;
   white-space: nowrap;
+}
+
+/* ── Layer 2 Ekosystem ─────────────────────────── */
+
+.l2-total-row { margin-bottom: 12px; }
+.l2-bar-container { margin-top: 8px; }
+.l2-bar {
+  display: flex;
+  height: 28px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #151929;
+  border: 1px solid #2b3252;
+}
+.l2-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  transition: width 0.5s ease;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.l2-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: #c7cdf0;
+}
+.l2-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.l2-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
 }
 
 /* ── Gas Tracker ────────────────────────────────── */
@@ -1307,10 +1431,89 @@ h1 {
 
 footer {
   text-align: center;
-  color: #8b91ab;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
 }
 
 footer a {
-  color: #8a9cff;
+  color: var(--color-accent-alt);
+}
+
+/* VWAP & Fibonacci */
+.fib-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fib-level {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.fib-level:last-child {
+  border-bottom: none;
+}
+
+.fib-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.fib-price {
+  font-weight: 700;
+}
+
+.fib-active {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* ── Timeframe Tabs ────────────────────────────── */
+
+.timeframe-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.timeframe-tab {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-family: inherit;
+}
+
+.timeframe-tab:not(:last-child) {
+  border-right: 1px solid var(--color-border);
+}
+
+.timeframe-tab:hover {
+  background: rgba(109, 213, 237, 0.08);
+  color: var(--color-text-secondary);
+}
+
+.timeframe-tab-active {
+  background: rgba(109, 213, 237, 0.15);
+  color: var(--color-accent);
+}
+
+/* Error toast animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

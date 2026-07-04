@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aktieanalys -- Automatiska tester</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0a0a23;
+      color: #e7e9f0;
+      padding: 24px;
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 8px;
+      color: #6dd5ed;
+    }
+    .summary {
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .summary-pass { background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.4); }
+    .summary-fail { background: rgba(231, 76, 60, 0.12); border: 1px solid rgba(231, 76, 60, 0.4); }
+    .suite {
+      margin-bottom: 20px;
+      background: rgba(20, 20, 50, 0.6);
+      border-radius: 10px;
+      border: 1px solid #2b3252;
+      overflow: hidden;
+    }
+    .suite-header {
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 1rem;
+      background: rgba(30, 30, 60, 0.8);
+      border-bottom: 1px solid #2b3252;
+    }
+    .test-result {
+      padding: 8px 16px;
+      border-bottom: 1px solid rgba(43, 50, 82, 0.5);
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .test-result:last-child { border-bottom: none; }
+    .test-pass .test-icon { color: #2ecc71; }
+    .test-fail .test-icon { color: #e74c3c; }
+    .test-icon { font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+    .test-name { flex: 1; }
+    .test-error {
+      display: block;
+      color: #ff6f61;
+      font-size: 0.8rem;
+      margin-top: 4px;
+      padding-left: 26px;
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+    .test-time {
+      color: #8b91ab;
+      font-size: 0.78rem;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Aktieanalys -- Testresultat</h1>
+  <div id="summary" class="summary summary-pass">Kor tester...</div>
+  <div id="results"></div>
+
+  <!--
+    Ladda stocks.js i testlage: vi behover DOM-element som stocks.js
+    refererar till vid init. Vi skapar minimala stubs sa init() inte kraschar.
+  -->
+  <div style="display:none">
+    <div id="stock-list-section"></div>
+    <div id="api-status-badge" class="src-badge"></div>
+    <div id="src-twelvedata" class="src-badge"></div>
+    <div id="src-finnhub" class="src-badge"></div>
+    <div id="src-alphavantage" class="src-badge"></div>
+    <div id="stocks-last-updated"></div>
+    <div id="stocks-countdown"></div>
+    <div id="scanner-status-section" style="display:none"></div>
+    <div id="scanner-status-badge"></div>
+    <div id="scanner-hit-count"></div>
+    <div id="scanner-scanned-count"></div>
+    <select id="sort-select"><option value="signal">Signal</option></select>
+    <div id="stock-detail-overlay" style="display:none">
+      <div class="stock-detail-container">
+        <button id="detail-close-btn"></button>
+        <h2 id="detail-name"></h2>
+        <span id="detail-ticker"></span>
+        <span id="detail-market-badge"></span>
+        <span id="detail-sector"></span>
+        <span id="detail-price"></span>
+        <span id="detail-change"></span>
+        <span id="detail-signal-badge"></span>
+        <span id="detail-time-horizon"></span>
+        <span id="detail-risk-level"></span>
+        <div id="detail-penny-warning" style="display:none"></div>
+        <p id="detail-motivation"></p>
+        <span id="detail-target-price"></span>
+        <span id="detail-stop-loss"></span>
+        <span id="detail-upside"></span>
+        <div id="detail-ta-scorecard"></div>
+        <ul id="detail-support-list"></ul>
+        <ul id="detail-resistance-list"></ul>
+        <ul id="detail-news-list"></ul>
+        <canvas id="detail-chart"></canvas>
+        <span id="detail-sma20"></span>
+        <span id="detail-sma50"></span>
+        <span id="detail-ema12"></span>
+        <span id="detail-ema26"></span>
+        <span id="detail-rsi"></span>
+        <span id="detail-macd"></span>
+        <span id="detail-macd-signal"></span>
+        <span id="detail-macd-hist"></span>
+        <span id="detail-pe"></span>
+        <span id="detail-eps"></span>
+        <span id="detail-market-cap"></span>
+        <span id="detail-52w-high"></span>
+        <span id="detail-52w-low"></span>
+        <span id="detail-avg-volume"></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="../stocks.js"></script>
+  <script src="stocks-tests.js"></script>
+</body>
+</html>

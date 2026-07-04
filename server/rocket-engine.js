@@ -122,6 +122,8 @@ function generateRockets(options = {}) {
     minScore = MIN_ROCKET_SCORE,
   } = options;
   const today = new Date().toISOString().split("T")[0];
+  const dow = new Date(today + "T12:00:00Z").getUTCDay();
+  if (dow === 0 || dow === 6) return null; // No market data on weekends
   const targetDate = getNextTradingDay(today);
 
   const hits = db.getHitsForDate(today);
@@ -355,10 +357,13 @@ function writeRocketSnapshot(snapshot) {
   fs.writeFileSync(snapshotPathForTargetDate(snapshot.target_date), JSON.stringify(snapshot, null, 2), "utf-8");
 }
 
-function getYesterdayCalendarDate() {
+function getLastTradingDate() {
   const today = new Date().toISOString().split("T")[0];
   const d = new Date(today + "T12:00:00Z");
   d.setUTCDate(d.getUTCDate() - 1);
+  while (d.getUTCDay() === 0 || d.getUTCDay() === 6) {
+    d.setUTCDate(d.getUTCDate() - 1);
+  }
   return d.toISOString().split("T")[0];
 }
 
@@ -375,9 +380,9 @@ function readSnapshotFile(filename) {
   }
 }
 
-/** Tips publicerade igår (prediction_date = gårdagen). */
+/** Tips publicerade senaste handelsdagen. */
 function getYesterdayRocketTips() {
-  const yesterday = getYesterdayCalendarDate();
+  const yesterday = getLastTradingDate();
   const today = new Date().toISOString().split("T")[0];
 
   for (const file of listRocketSnapshotFiles()) {

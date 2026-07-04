@@ -5,12 +5,16 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "discord": "node discord-bot.js",
+    "both": "node index.js & node discord-bot.js",
     "scan": "node scanner.js --run-once",
     "float-scan": "node float-scanner.js --run-once"
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "discord.js": "^13.17.1",
+    "dotenv": "^16.6.1",
     "express": "^4.21.0",
-    "node-cron": "^3.0.3"
+    "node-cron": "^4.5.0"
   }
 }

@@ -1,64 +1,27 @@
 {
   "title": "Morgondagens raketer",
-  "prediction_date": "2026-06-21",
+  "prediction_date": "2026-06-20",
   "target_date": "2026-06-22",
   "target_day": "Monday",
-  "generated_at": "2026-06-21T09:41:00.984Z",
-  "scanner_universe": 2245,
-  "filters": {
-    "min_rocket_score": 65,
-    "max_picks": 3,
-    "excluded_pump_count": 39,
-    "below_threshold_count": 1069
-  },
+  "generated_at": "2026-06-20T11:30:58.158Z",
+  "scanner_universe": 2243,
   "rockets": [
     {
       "ticker": "QXL",
       "name": "Quantum X Labs Inc.",
       "price_at_prediction": 6.35,
-      "change_today": 12.989325,
+      "change_today": 12.9893,
       "rocket_score": 75,
-      "volume": 385041,
-      "relative_volume": 5.163691713492564,
+      "volume": 375579,
+      "relative_volume": 5.036799120254268,
       "confidence_score": 50,
       "risk_score": 2,
       "scanner_type": "momentum",
-      "trigger_reason": "+13.0% | Vol: 385K | 5.2x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
+      "trigger_reason": "+13.0% | Vol: 376K | 5.0x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
       "risk_flags": [],
-      "result": {
-        "verified_at": "2026-06-21T09:55:02.643Z",
-        "current_price": 6.35,
-        "change_pct": 0,
-        "was_correct": false,
-        "hit_20pct": false,
-        "hit_stop_loss": false
-      },
+      "result": null,
       "target_20pct": 7.62,
       "stop_loss_8pct": 5.84
-    },
-    {
-      "ticker": "LIXT",
-      "name": "Lixte Biotechnology Holdings, I",
-      "price_at_prediction": 7.61,
-      "change_today": 9.339082,
-      "rocket_score": 75,
-      "volume": 1007714,
-      "relative_volume": 6.35032485332762,
-      "confidence_score": 48,
-      "risk_score": 2,
-      "scanner_type": "momentum",
-      "trigger_reason": "+9.3% | Vol: 1.0M | 6.4x snittvolym | EXTREM VOLYM | Nara 52v-high | $5-$10",
-      "risk_flags": [],
-      "result": {
-        "verified_at": "2026-06-21T09:54:33.548Z",
-        "current_price": 7.61,
-        "change_pct": 0,
-        "was_correct": false,
-        "hit_20pct": false,
-        "hit_stop_loss": false
-      },
-      "target_20pct": 9.13,
-      "stop_loss_8pct": 7
     },
     {
       "ticker": "MFI",
@@ -73,86 +36,72 @@
       "scanner_type": "momentum",
       "trigger_reason": "+25.6% | Vol: 68K | 5.3x snittvolym | $5-$10",
       "risk_flags": [],
-      "result": {
-        "verified_at": "2026-06-21T09:55:02.643Z",
-        "current_price": 9.875,
-        "change_pct": 0,
-        "was_correct": false,
-        "hit_20pct": false,
-        "hit_stop_loss": false
-      },
+      "result": null,
       "target_20pct": 11.85,
       "stop_loss_8pct": 9.09
+    },
+    {
+      "ticker": "KFFB",
+      "name": "Kentucky First Federal Bancorp",
+      "price_at_prediction": 5.1,
+      "change_today": 6.69455,
+      "rocket_score": 70,
+      "volume": 21744,
+      "relative_volume": 9.086502298370247,
+      "confidence_score": 43,
+      "risk_score": 3,
+      "scanner_type": "momentum",
+      "trigger_reason": "+6.7% | Vol: 22K | 9.1x snittvolym | Nara 52v-high | $5-$10",
+      "risk_flags": [
+        "Micro-cap (<$50M)"
+      ],
+      "result": null,
+      "target_20pct": 6.12,
+      "stop_loss_8pct": 4.69
+    },
+    {
+      "ticker": "GEG",
+      "name": "Great Elm Group, Inc.",
+      "price_at_prediction": 2.76,
+      "change_today": 20.524,
+      "rocket_score": 68,
+      "volume": 86835,
+      "relative_volume": 7.196668324216808,
+      "confidence_score": 65,
+      "risk_score": 3,
+      "scanner_type": "momentum",
+      "trigger_reason": "+20.5% | Vol: 87K | 7.2x snittvolym | $1-$5",
+      "risk_flags": [
+        "Micro-price ($1-3)"
+      ],
+      "result": null,
+      "target_20pct": 3.31,
+      "stop_loss_8pct": 2.54
+    },
+    {
+      "ticker": "HYPR",
+      "name": "Hyperfine, Inc.",
+      "price_at_prediction": 1.6,
+      "change_today": 15.1079,
+      "rocket_score": 68,
+      "volume": 4024633,
+      "relative_volume": 6.473312241546531,
+      "confidence_score": 60,
+      "risk_score": 3,
+      "scanner_type": "momentum",
+      "trigger_reason": "+15.1% | Vol: 4.0M | 6.5x snittvolym | EXTREM VOLYM | $1-$5",
+      "risk_flags": [
+        "Micro-price ($1-3)"
+      ],
+      "result": null,
+      "target_20pct": 1.92,
+      "stop_loss_8pct": 1.47
     }
   ],
   "verification": {
     "check_date": "2026-06-22",
     "check_time": "16:00 ET (market close)",
     "success_criteria": "+20% fran price_at_prediction = raket träffad. Under -8% = stop-loss.",
-    "result": {
-      "verified_count": 5,
-      "correct_count": 0,
-      "hit_rate": 0,
-      "rockets_20pct": 0,
-      "avg_change": 0
-    },
-    "verified_at": "2026-06-21T09:55:02.644Z",
-    "rockets": [
-      {
-        "ticker": "QXL",
-        "result": {
-          "verified_at": "2026-06-21T09:55:02.643Z",
-          "current_price": 6.35,
-          "change_pct": 0,
-          "was_correct": false,
-          "hit_20pct": false,
-          "hit_stop_loss": false
-        }
-      },
-      {
-        "ticker": "MFI",
-        "result": {
-          "verified_at": "2026-06-21T09:55:02.643Z",
-          "current_price": 9.875,
-          "change_pct": 0,
-          "was_correct": false,
-          "hit_20pct": false,
-          "hit_stop_loss": false
-        }
-      },
-      {
-        "ticker": "KFFB",
-        "result": {
-          "verified_at": "2026-06-21T09:55:02.643Z",
-          "current_price": 5.1,
-          "change_pct": 0,
-          "was_correct": false,
-          "hit_20pct": false,
-          "hit_stop_loss": false
-        }
-      },
-      {
-        "ticker": "GEG",
-        "result": {
-          "verified_at": "2026-06-21T09:55:02.643Z",
-          "current_price": 2.76,
-          "change_pct": 0,
-          "was_correct": false,
-          "hit_20pct": false,
-          "hit_stop_loss": false
-        }
-      },
-      {
-        "ticker": "HYPR",
-        "result": {
-          "verified_at": "2026-06-21T09:55:02.643Z",
-          "current_price": 1.6,
-          "change_pct": 0,
-          "was_correct": false,
-          "hit_20pct": false,
-          "hit_stop_loss": false
-        }
-      }
-    ]
+    "result": null
   }
 }
