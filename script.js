@@ -83,6 +83,7 @@ const els = {
   volQuickValue:    document.getElementById("vol-quick-value"),
   volQuickDetail:   document.getElementById("vol-quick-detail"),
   volQuickCompare:  document.getElementById("vol-quick-compare"),
+  headerVolText:    document.getElementById("header-vol-text"),
   priceSourceNote:  document.getElementById("price-source-note"),
   // ETH vs Marknaden (Korrelation)
   ethbtcRatio:      document.getElementById("ethbtc-ratio"),
@@ -284,6 +285,29 @@ function getVolumeAction(cls, rvol, change24h, tendency) {
   return "Extremt mycket handel utan tydlig riktning. Något stort pågår – vänta tills det klarnar.";
 }
 
+function formatVolHandelStatus(rvol) {
+  const cls = classifyVolume(rvol);
+  if (rvol == null) {
+    return { text: "Laddar…", cssClass: "vol-unknown" };
+  }
+  const volPct = Math.round(rvol * 100);
+  if (cls.confirmsBreakout || cls.level === "high" || cls.level === "extreme") {
+    return { text: `Ja – hög handel (${volPct}% av normalt)`, cssClass: cls.cssClass };
+  }
+  if (cls.level === "low") {
+    return { text: `Nej – låg handel (${volPct}% av normalt)`, cssClass: cls.cssClass };
+  }
+  return { text: `Måttlig handel (${volPct}% av normalt)`, cssClass: cls.cssClass };
+}
+
+function renderHeaderVolStatus(rvol) {
+  const status = formatVolHandelStatus(rvol);
+  if (els.headerVolText) {
+    els.headerVolText.textContent = status.text;
+    els.headerVolText.className = `header-vol-text ${status.cssClass}`;
+  }
+}
+
 function renderVolumeAnalysis(volumes, change24h, suffix = "d") {
   const rvol = computeRvol20(volumes);
   const cls = classifyVolume(rvol);
@@ -326,6 +350,7 @@ function renderVolumeAnalysis(volumes, change24h, suffix = "d") {
     els.volTendency.className = "vol-tendency";
   }
 
+  renderHeaderVolStatus(rvol);
   return { rvol, cls, trend7, tendency };
 }
 
@@ -355,6 +380,8 @@ function renderVolQuickBox(volumes, quoteVolume24h, change24h) {
   if (els.volQuickDetail) {
     els.volQuickDetail.textContent = action;
   }
+
+  renderHeaderVolStatus(rvol);
 }
 
 async function fetchJson(url) {
@@ -673,15 +700,10 @@ function renderBreakoutAnalysis(ba, currentPrice, ma50val, ma200val) {
   }
 
   // Volymbekräftelse
-  const volCls = classifyVolume(ba.volRatio);
-  const volPct = Math.round(ba.volRatio * 100);
-  const confirmed = volCls.confirmsBreakout;
-  els.volConfirm.textContent = confirmed
-    ? `Ja – hög handel (${volPct}% av normalt)`
-    : volCls.level === "low"
-      ? `Nej – låg handel (${volPct}% av normalt)`
-      : `Måttlig handel (${volPct}% av normalt)`;
-  els.volConfirm.className = `value ${volCls.cssClass}`;
+  const volStatus = formatVolHandelStatus(ba.volRatio);
+  els.volConfirm.textContent = volStatus.text;
+  els.volConfirm.className = `value ${volStatus.cssClass}`;
+  renderHeaderVolStatus(ba.volRatio);
 
   // Motstånds- och stödlistor
   const fillList = (el, levels, isResistance) => {

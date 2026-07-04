@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0f1117">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Aktier">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 </head>
@@ -27,9 +27,15 @@
       </a>
     </nav>
 
-    <header>
-      <h1>Ξ Ethereum Tracker</h1>
-      <p class="subtitle">Live-pris, trend och enkla köp/sälj-signaler baserade på teknisk analys</p>
+    <header class="site-header">
+      <div class="site-header-main">
+        <h1>Ξ Ethereum Tracker</h1>
+        <p class="subtitle">Live-pris, trend och enkla köp/sälj-signaler baserade på teknisk analys</p>
+      </div>
+      <aside class="header-vol-pill" id="header-vol-pill" aria-label="Handelsvolym just nu">
+        <span class="header-vol-label">Tillräckligt mycket handel?</span>
+        <strong id="header-vol-text" class="header-vol-text vol-unknown">Laddar…</strong>
+      </aside>
     </header>
 
     <section id="price-card" class="card">
@@ -614,6 +620,6 @@
     </footer>
   </div>
 
-  <script src="script.js?v=8"></script>
+  <script src="script.js?v=9"></script>
 </body>
 </html>
