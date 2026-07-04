@@ -1,5 +1,5 @@
 [phases.install]
-cmds = ["cd server && npm install"]
+cmds = ["npm install --prefix server"]
 
 [start]
-cmd = "cd server && node index.js"
+cmd = "node server/index.js"
