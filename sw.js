@@ -1,4 +1,4 @@
-const CACHE = "aktier-v1";
+const CACHE = "aktier-v2";
 const SHELL = [
   "/",
   "/index.html",
@@ -10,6 +10,14 @@ const SHELL = [
   "/icon.svg",
   "/manifest.json"
 ];
+
+function isAppShell(url) {
+  if (url.pathname.startsWith("/api/")) return false;
+  return SHELL.includes(url.pathname) ||
+    url.pathname.endsWith(".html") ||
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".css");
+}
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
@@ -25,14 +33,32 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-  // API-anrop: nätverk först, fallback till cache
+  if (e.request.method !== "GET") return;
+
+  // API: nätverk först
   if (url.pathname.startsWith("/api/")) {
     e.respondWith(
       fetch(e.request).catch(() => caches.match(e.request))
     );
     return;
   }
-  // Statiska filer: cache först, fallback till nätverk
+
+  // App-shell: nätverk först så nya versioner syns direkt
+  if (isAppShell(url)) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );

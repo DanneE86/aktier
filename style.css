@@ -305,6 +305,50 @@ select:focus-visible {
   color: #ff6f61;
 }
 
+.price-source-note {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: #f4d35e;
+}
+
+.vol-quick-box {
+  margin-top: 20px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(138, 156, 255, 0.12) 0%, rgba(76, 224, 129, 0.06) 100%);
+  border: 1px solid #2b3252;
+  border-radius: 12px;
+}
+
+.vol-quick-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.vol-quick-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8b91ab;
+  font-weight: 600;
+}
+
+.vol-quick-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.vol-quick-detail {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #c7cdf0;
+  line-height: 1.45;
+}
+
 /* ── Volymanalys ─────────────────────────────────── */
 
 .vol-header {

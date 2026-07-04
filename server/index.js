@@ -161,7 +161,7 @@ app.get("/api/rockets/prices", async (req, res) => {
 
 // ── COINGECKO PROXY (avoids CORS + rate limiting via cache) ─────
 const cgCache = new Map();
-const CG_CACHE_TTL = 60_000;
+const CG_CACHE_TTL = 300_000;
 const ALLOWED_CG_PATHS = [
   /^simple\/price$/,
   /^global$/,
@@ -187,7 +187,10 @@ app.get("/api/coingecko/*", async (req, res) => {
 
   try {
     const r = await fetch(url);
-    if (!r.ok) return res.status(r.status).json({ error: `CoinGecko ${r.status}` });
+    if (!r.ok) {
+      if (cached) return res.json(cached.data);
+      return res.status(r.status).json({ error: `CoinGecko ${r.status}` });
+    }
     const data = await r.json();
     cgCache.set(url, { data, ts: Date.now() });
     res.json(data);

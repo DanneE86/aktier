@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0f1117">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Aktier">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 </head>
@@ -58,6 +58,16 @@
       <p class="auto-refresh">
         🔄 Auto-uppdaterar varje minut · nästa uppdatering om <span id="countdown">60</span> s
       </p>
+      <p id="price-source-note" class="price-source-note" style="display:none"></p>
+
+      <div class="vol-quick-box" id="vol-quick-box">
+        <div class="vol-quick-header">
+          <span class="vol-quick-title">Handelsvolym 24h</span>
+          <span id="vol-quick-badge" class="vol-badge vol-unknown">–</span>
+        </div>
+        <div id="vol-quick-value" class="vol-quick-value">–</div>
+        <p id="vol-quick-detail" class="vol-quick-detail">Laddar volymdata…</p>
+      </div>
     </section>
 
     <section id="market-card" class="card">
@@ -598,6 +608,6 @@
     </footer>
   </div>
 
-  <script src="script.js?v=6"></script>
+  <script src="script.js?v=7"></script>
 </body>
 </html>

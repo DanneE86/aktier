@@ -6,6 +6,8 @@ if ("serviceWorker" in navigator) {
 // alternative.me (Crypto Fear & Greed Index), DefiLlama (TVL/staking) och Owlracle (gas).
 const COINGECKO_BASE = "/api/coingecko";
 const BINANCE_TICKER_URL = "https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT";
+const BINANCE_24HR_URL = "https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT";
+const BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=365";
 const FEAR_GREED_URL = "https://api.alternative.me/fng/?limit=1";
 const DEFILLAMA_CHAINS_URL = "https://api.llama.fi/v2/chains";
 const DEFILLAMA_YIELDS_URL = "https://yields.llama.fi/pools";
@@ -77,6 +79,10 @@ const els = {
   volDirection:     document.getElementById("vol-direction"),
   volInsight:       document.getElementById("vol-insight"),
   volTendency:      document.getElementById("vol-tendency"),
+  volQuickBadge:    document.getElementById("vol-quick-badge"),
+  volQuickValue:    document.getElementById("vol-quick-value"),
+  volQuickDetail:   document.getElementById("vol-quick-detail"),
+  priceSourceNote:  document.getElementById("price-source-note"),
   // ETH vs Marknaden (Korrelation)
   ethbtcRatio:      document.getElementById("ethbtc-ratio"),
   ethbtcChange:     document.getElementById("ethbtc-change"),
@@ -195,6 +201,11 @@ function computeVolumeTendency(volumes) {
 }
 
 function getVolumeAction(cls, rvol, change24h, tendency) {
+  if (cls.level === "unknown") {
+    return rvol == null
+      ? "24h-volym visas – RVOL-klassificering kräver 20 dagars historik."
+      : "Volymdata otillräcklig för full analys.";
+  }
   const priceUp = typeof change24h === "number" && change24h > 0.5;
   const priceDown = typeof change24h === "number" && change24h < -0.5;
 
@@ -277,6 +288,30 @@ function renderVolumeAnalysis(volumes, change24h, suffix = "d") {
   }
 
   return { rvol, cls, trend7, tendency };
+}
+
+function renderVolQuickBox(volumes, quoteVolume24h, change24h) {
+  const rvol = computeRvol20(volumes);
+  const cls = classifyVolume(rvol);
+  const action = getVolumeAction(cls, rvol, change24h, computeVolumeTendency(volumes));
+
+  if (els.volQuickBadge) {
+    els.volQuickBadge.textContent = cls.label;
+    els.volQuickBadge.className = `vol-badge ${cls.cssClass}`;
+  }
+  if (els.volQuickValue) {
+    if (quoteVolume24h != null) {
+      els.volQuickValue.textContent = fmtLarge(quoteVolume24h);
+      els.volQuickValue.className = `vol-quick-value ${cls.cssClass}`;
+    } else {
+      els.volQuickValue.textContent = "–";
+      els.volQuickValue.className = "vol-quick-value";
+    }
+  }
+  if (els.volQuickDetail) {
+    const rvolText = rvol != null ? `${rvol.toFixed(1)}x av 20d-snitt` : "Otillräcklig historik";
+    els.volQuickDetail.textContent = `${rvolText} · ${action}`;
+  }
 }
 
 async function fetchJson(url) {
@@ -2304,13 +2339,42 @@ document.querySelectorAll(".forecast-tab").forEach(tab => {
 let lastBinancePrice = null;
 let lastBestStakingApy = null;
 
-async function loadBinancePrice() {
+async function loadBinance24h() {
   try {
-    const ticker = await fetchJson(BINANCE_TICKER_URL);
-    lastBinancePrice = parseFloat(ticker.price);
-    els.priceBinance.textContent = fmtUsd(lastBinancePrice);
+    const data = await fetchJson(BINANCE_24HR_URL);
+    const result = {
+      price: parseFloat(data.lastPrice),
+      changePct: parseFloat(data.priceChangePercent),
+      quoteVolume: parseFloat(data.quoteVolume),
+      volume: parseFloat(data.volume),
+    };
+    lastBinancePrice = result.price;
+    els.priceBinance.textContent = fmtUsd(result.price);
+    return result;
   } catch {
     els.priceBinance.textContent = "Ej tillgängligt";
+    return null;
+  }
+}
+
+async function loadBinancePrice() {
+  return loadBinance24h();
+}
+
+async function loadBinanceHistory() {
+  try {
+    const klines = await fetchJson(BINANCE_KLINES_URL);
+    return {
+      prices: klines.map((k) => parseFloat(k[4])),
+      volumes: klines.map((k) => parseFloat(k[7])),
+      timestamps: klines.map((k) => k[0]),
+      labels: klines.map((k) =>
+        new Date(k[0]).toLocaleDateString("sv-SE", { month: "short", day: "numeric" })
+      ),
+    };
+  } catch (e) {
+    console.error("Binance klines misslyckades:", e);
+    return null;
   }
 }
 
@@ -2909,7 +2973,7 @@ async function loadData() {
       fetchJson(`${COINGECKO_BASE}/simple/price?ids=ethereum&vs_currencies=usd,sek&include_24hr_change=true&include_last_updated_at=true`),
       fetchJson(`${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=ethereum&per_page=1&page=1&price_change_percentage=7d,30d`),
       fetchJson(`${COINGECKO_BASE}/coins/ethereum/market_chart?vs_currency=usd&days=365&interval=daily`),
-      loadBinancePrice(),
+      loadBinance24h(),
       loadSentiment(),
       loadDefi(),
       loadCorrelation(),
@@ -2923,13 +2987,57 @@ async function loadData() {
       return null;
     });
 
-    const simple         = settled[0];
-    const marketsArr     = settled[1];
-    const market         = settled[2];
-    const sentimentValue = settled[4];
+    let simple         = settled[0];
+    let marketsArr     = settled[1];
+    let market         = settled[2];
+    const binance24h   = settled[3];
+    const sentimentValue = settled[5];
 
-    // Om kritiska CoinGecko-anrop misslyckades, visa felmeddelande men krascha inte
-    if (!simple || !market) {
+    // Binance-fallback när CoinGecko rate-limitar (429)
+    let usingBinanceFallback = false;
+    if (!simple?.ethereum && binance24h?.price) {
+      usingBinanceFallback = true;
+      simple = {
+        ethereum: {
+          usd: binance24h.price,
+          sek: null,
+          usd_24h_change: binance24h.changePct,
+          last_updated_at: Math.floor(Date.now() / 1000),
+        },
+      };
+    }
+    if (!market) {
+      const binHist = await loadBinanceHistory();
+      if (binHist) {
+        market = {
+          prices: binHist.timestamps.map((ts, i) => [ts, binHist.prices[i]]),
+          total_volumes: binHist.timestamps.map((ts, i) => [ts, binHist.volumes[i]]),
+        };
+        usingBinanceFallback = true;
+      }
+    }
+    if (!marketsArr?.[0] && binance24h) {
+      marketsArr = [{
+        market_cap: null,
+        total_volume: binance24h.quoteVolume,
+        price_change_percentage_7d_in_currency: null,
+        price_change_percentage_30d_in_currency: null,
+        ath: null,
+        ath_change_percentage: null,
+        circulating_supply: null,
+        total_supply: null,
+      }];
+      usingBinanceFallback = true;
+    }
+
+    // Om kritiska datakällor misslyckades helt, visa felmeddelande
+    if (!simple?.ethereum) {
+      els.signalBadge.textContent = "Ofullständig data – kunde inte hämta pris";
+      els.signalBadge.className   = "signal-badge signal-error";
+    } else if (usingBinanceFallback) {
+      els.signalBadge.textContent = "Live-data via Binance (CoinGecko tillfälligt otillgänglig)";
+      els.signalBadge.className   = "signal-badge signal-hold";
+    } else if (!market) {
       els.signalBadge.textContent = "Ofullständig data – vissa API:er svarar inte";
       els.signalBadge.className   = "signal-badge signal-error";
     }
@@ -2941,10 +3049,18 @@ async function loadData() {
     lastChange24h = change24h;
     if (eth) {
       els.priceUsd.textContent   = fmtUsd(currentPrice);
-      els.priceSek.textContent   = fmtSek(eth.sek);
+      els.priceSek.textContent   = eth.sek != null ? fmtSek(eth.sek) : "– (Binance-fallback)";
       els.change24h.textContent  = fmtPct(change24h);
       els.change24h.className    = `price-small ${change24h >= 0 ? "up" : "down"}`;
-      els.lastUpdated.textContent = new Date(eth.last_updated_at * 1000).toLocaleString("sv-SE");
+      els.lastUpdated.textContent = eth.last_updated_at
+        ? new Date(eth.last_updated_at * 1000).toLocaleString("sv-SE")
+        : new Date().toLocaleString("sv-SE");
+    }
+    if (els.priceSourceNote) {
+      els.priceSourceNote.textContent = usingBinanceFallback
+        ? "Pris & volym via Binance – CoinGecko rate limit aktiv"
+        : "";
+      els.priceSourceNote.style.display = usingBinanceFallback ? "block" : "none";
     }
 
     // Gas Tracker (behöver ETH-pris för USD-estimat)
@@ -2952,19 +3068,26 @@ async function loadData() {
 
     // 2) Marknadsinformation
     const md = marketsArr?.[0];
+    let quoteVolume24h = binance24h?.quoteVolume ?? md?.total_volume ?? null;
     if (md) {
-      els.marketCap.textContent  = fmtLarge(md.market_cap);
-      els.volume24h.textContent  = fmtLarge(md.total_volume);
-      const c7  = md.price_change_percentage_7d_in_currency  ?? 0;
-      const c30 = md.price_change_percentage_30d_in_currency ?? 0;
-      els.change7d.textContent   = fmtPct(c7);
-      els.change7d.className     = `value ${c7  >= 0 ? "up" : "down"}`;
-      els.change30d.textContent  = fmtPct(c30);
-      els.change30d.className    = `value ${c30 >= 0 ? "up" : "down"}`;
-      els.athPrice.textContent   = fmtUsd(md.ath);
-      const athDist              = md.ath_change_percentage ?? 0;
-      els.athDistance.textContent = fmtPct(athDist);
-      els.athDistance.className  = `value ${athDist >= 0 ? "up" : "down"}`;
+      if (md.market_cap != null) els.marketCap.textContent = fmtLarge(md.market_cap);
+      els.volume24h.textContent  = fmtLarge(md.total_volume ?? quoteVolume24h);
+      if (md.price_change_percentage_7d_in_currency != null) {
+        const c7 = md.price_change_percentage_7d_in_currency;
+        els.change7d.textContent = fmtPct(c7);
+        els.change7d.className = `value ${c7 >= 0 ? "up" : "down"}`;
+      }
+      if (md.price_change_percentage_30d_in_currency != null) {
+        const c30 = md.price_change_percentage_30d_in_currency;
+        els.change30d.textContent = fmtPct(c30);
+        els.change30d.className = `value ${c30 >= 0 ? "up" : "down"}`;
+      }
+      if (md.ath != null) {
+        els.athPrice.textContent = fmtUsd(md.ath);
+        const athDist = md.ath_change_percentage ?? 0;
+        els.athDistance.textContent = fmtPct(athDist);
+        els.athDistance.className = `value ${athDist >= 0 ? "up" : "down"}`;
+      }
 
       // ETH Tokenomics (supply-data finns i /coins/markets response)
       const circ = md.circulating_supply;
@@ -3012,6 +3135,10 @@ async function loadData() {
           els.stakingSecurity.className = "value staking-security-low";
         }
       }
+    }
+
+    if (quoteVolume24h) {
+      renderVolQuickBox([], quoteVolume24h, change24h);
     }
 
     // 3) 365-dagars historik -> graf + indikatorer + utbrottsanalys
@@ -3075,11 +3202,12 @@ async function loadData() {
       }
 
       renderVolumeAnalysis(volumes, lastChange24h, "d");
+      renderVolQuickBox(volumes, quoteVolume24h, lastChange24h);
 
       if (md && volumes.length >= 21) {
         const rvol = computeRvol20(volumes);
         const cls = classifyVolume(rvol);
-        els.volume24h.textContent = `${fmtLarge(md.total_volume)} · ${rvol.toFixed(1)}x (${cls.label})`;
+        els.volume24h.textContent = `${fmtLarge(md.total_volume ?? quoteVolume24h)} · ${rvol.toFixed(1)}x (${cls.label})`;
       }
 
       // 3b) VWAP & Fibonacci
