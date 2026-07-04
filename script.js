@@ -1095,6 +1095,123 @@ const FORECAST_WEIGHTS = {
   730: { A: 0.10, B: 0.10, C: 0.10, D: 0.55, E: 0.15 },
 };
 
+// Horizons beyond 2 years have no real analyst-consensus data (method D), so weight
+// shifts from trend-extrapolation (A/C) toward damped smoothing (B) and mean-reversion (E)
+// as the horizon lengthens — the further out, the less a straight-line trend should count.
+// Interpolation starts FROM the tabulated 2-year (730d) weights and eases toward a 10-year
+// target, so flipping from the "2 år" to "3 år" tab fades D/A/C out smoothly instead of the
+// weights snapping to an unrelated formula at the table boundary.
+function getForecastWeights(daysAhead) {
+  if (FORECAST_WEIGHTS[daysAhead]) return { ...FORECAST_WEIGHTS[daysAhead] };
+  const start = FORECAST_WEIGHTS[730];
+  // Mean-reversion (E) is capped well under "dominant" here: it anchors to a recent-history
+  // average price, which pulls a multi-year forecast toward "no growth" rather than reflecting
+  // a maturing asset's trend — a weak long-run anchor on its own. Regression (A) keeps a real
+  // vote since, with its own confidence band and the shared plausibleMultiplier sanity clamp,
+  // it's the method that actually represents "the trend continues," which is the more
+  // defensible base case for a multi-year crypto forecast than reverting to last year's mean.
+  const target = { A: 0.30, B: 0.20, C: 0.05, D: 0, E: 0.45 };
+  const years = daysAhead / 365;
+  const t = Math.max(0, Math.min(1, (years - 2) / 8)); // 0 at 2y, 1 at 10y
+  const lerp = (a, b) => a + (b - a) * t;
+  return {
+    A: lerp(start.A, target.A),
+    B: lerp(start.B, target.B),
+    C: lerp(start.C, target.C),
+    D: lerp(start.D, target.D),
+    E: lerp(start.E, target.E),
+  };
+}
+
+// Shared sanity bound used by any method that can, in principle, extrapolate without limit
+// (log-linear regression, momentum compounding). Short horizons keep their tuned caps; from
+// 1 year on the multiplier scales continuously with years (years=1 -> 3x, years=2 -> 5x).
+function plausibleMultiplier(daysAhead) {
+  if (daysAhead <= 7) return 1.3;
+  if (daysAhead <= 30) return 1.8;
+  const years = daysAhead / 365;
+  return Math.min(25, 1 + years * 2);
+}
+
+// Yearly horizons (1-10 år) are shown as scenario ladders instead of statistical point
+// forecasts: three assumed constant annual returns compounded from the live current price.
+// This mirrors how long-range crypto outlooks are honestly framed — nobody can model a
+// multi-year crypto price, but "what if it compounds at X%/yr" is a transparent calculation.
+const SCENARIO_RATES = { bear: -0.10, base: 0.15, bull: 0.35 };
+
+function buildScenarioForecast(currentPrice, daysAhead) {
+  if (!(currentPrice > 0)) return null;
+  const years = daysAhead / 365;
+  const bear = currentPrice * Math.pow(1 + SCENARIO_RATES.bear, years);
+  const base = currentPrice * Math.pow(1 + SCENARIO_RATES.base, years);
+  const bull = currentPrice * Math.pow(1 + SCENARIO_RATES.bull, years);
+  return {
+    price: base,
+    upper: bull,
+    lower: bear,
+    changePct: (base / currentPrice - 1) * 100,
+    isScenario: true,
+    daysAhead,
+  };
+}
+
+const fmtUsdRound = (n) => `$${Math.round(n).toLocaleString("en-US")}`;
+
+function renderScenarioTable(container, currentPrice) {
+  const startYear = new Date().getFullYear();
+  const wrap = document.createElement("div");
+  wrap.className = "forecast-scenario-wrap";
+
+  const intro = document.createElement("p");
+  intro.className = "forecast-scenario-intro";
+  intro.textContent =
+    `Utgångspunkt: ETH vid cirka ${fmtUsdRound(currentPrice)}. ` +
+    "Tabellen visar tre scenarier med antagen årlig avkastning (−10 %, +15 %, +35 %).";
+  wrap.appendChild(intro);
+
+  const table = document.createElement("table");
+  table.className = "forecast-scenario-table";
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  ["År", "Björn (−10 %)", "Bas (+15 %)", "Tjur (+35 %)"].forEach(text => {
+    const th = document.createElement("th");
+    th.textContent = text;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  for (let year = 1; year <= 10; year++) {
+    const tr = document.createElement("tr");
+    const yearCell = document.createElement("td");
+    yearCell.textContent = `${year} (${startYear + year})`;
+    const bearCell = document.createElement("td");
+    bearCell.textContent = fmtUsdRound(currentPrice * Math.pow(1 + SCENARIO_RATES.bear, year));
+    bearCell.className = "forecast-scenario-bear";
+    const baseCell = document.createElement("td");
+    baseCell.textContent = fmtUsdRound(currentPrice * Math.pow(1 + SCENARIO_RATES.base, year));
+    baseCell.className = "forecast-scenario-base";
+    const bullCell = document.createElement("td");
+    bullCell.textContent = fmtUsdRound(currentPrice * Math.pow(1 + SCENARIO_RATES.bull, year));
+    bullCell.className = "forecast-scenario-bull";
+    tr.appendChild(yearCell);
+    tr.appendChild(bearCell);
+    tr.appendChild(baseCell);
+    tr.appendChild(bullCell);
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+
+  const note = document.createElement("p");
+  note.className = "forecast-scenario-note";
+  note.textContent =
+    "Beräkningsexempel, inte prognoser. Kryptopriser rör sig sällan linjärt år för år.";
+  wrap.appendChild(note);
+  container.appendChild(wrap);
+}
+
 function forecastLinearRegression(prices, daysAhead) {
   const n = prices.length;
   if (n < 2) return null;
@@ -1123,10 +1240,23 @@ function forecastLinearRegression(prices, daysAhead) {
   }
   const residualStd = m > 2 ? Math.sqrt(ssRes / (m - 2)) : 0;
   const logMargin = residualStd * Math.sqrt(1 + 1 / m + Math.pow(forecastDay - xMean, 2) / SSxx) * 1.96;
+  const rawUpper = Math.exp(Math.log(forecastPrice) + logMargin);
+  const rawLower = Math.max(0, Math.exp(Math.log(forecastPrice) - logMargin));
+
+  // Sanity clamp: a volatile short recent window can produce a slope that, compounded over
+  // thousands of days, overflows to Infinity or an otherwise absurd magnitude — that would
+  // silently corrupt the weighted blend since Infinity passes both the isNaN guard and the
+  // "price > 0" active-method check downstream. Anchor to the last known price instead.
+  const lastPrice = prices[prices.length - 1];
+  if (!(lastPrice > 0) || !isFinite(forecastPrice)) {
+    return isFinite(forecastPrice) ? { price: forecastPrice, upper: rawUpper, lower: rawLower } : null;
+  }
+  const maxMult = plausibleMultiplier(daysAhead);
+  const clamp = v => Math.min(lastPrice * maxMult, Math.max(lastPrice / maxMult, v));
   return {
-    price: forecastPrice,
-    upper: Math.exp(Math.log(forecastPrice) + logMargin),
-    lower: Math.max(0, Math.exp(Math.log(forecastPrice) - logMargin)),
+    price: clamp(forecastPrice),
+    upper: clamp(rawUpper),
+    lower: clamp(rawLower),
   };
 }
 
@@ -1134,8 +1264,16 @@ function forecastHolts(prices, daysAhead) {
   const n = prices.length;
   if (n < 2) return null;
   const alpha = 0.3, beta = 0.1;
-  // Dampen trend for long horizons to prevent runaway extrapolation
-  const dampingFactor = daysAhead >= 365 ? 0.95 : 1.0;
+  // Dampen trend for long horizons to prevent runaway extrapolation. Multi-year horizons
+  // ease the damping factor down continuously (instead of a stepped tier) so the trend
+  // contribution's asymptote (sum = damping/(1-damping)) tightens smoothly from ~19 at 1y
+  // to ~9 at 10y, with no visible jump between adjacent year tabs.
+  let dampingFactor = 1.0;
+  if (daysAhead >= 365) {
+    const years = daysAhead / 365;
+    const t = Math.max(0, Math.min(1, (years - 1) / 9)); // 0 at 1y, 1 at 10y
+    dampingFactor = 0.95 - 0.05 * t;
+  }
   const initEnd = Math.min(29, n - 1);
   let level = prices[0];
   let trend = (prices[initEnd] - prices[0]) / Math.min(30, n);
@@ -1210,23 +1348,32 @@ function forecastMomentum(prices, currentPrice, indicators, daysAhead) {
     baseDailyReturn = 0;
   }
 
-  // Adjustment factor by horizon
+  // Adjustment factor by horizon (known short horizons keep their tuned values). Momentum/trend
+  // signals are inherently short-lived — a trend read from today's MA/RSI snapshot says
+  // nothing reliable about 5-10 years out, so past 2 years the factor decays back down
+  // instead of climbing, so a stale technical read doesn't get amplified the further out it's
+  // extrapolated.
   const adjustFactors = { 7: 0.2, 30: 0.3, 365: 0.4, 730: 0.5 };
-  const adjustFactor = adjustFactors[daysAhead] || 0.3;
+  const adjustFactor = adjustFactors[daysAhead] != null
+    ? adjustFactors[daysAhead]
+    : Math.max(0.15, 0.5 - ((daysAhead - 730) / 2920) * 0.35);
   const adjustedDaily = baseDailyReturn * (1 + trendMultiplier * adjustFactor);
   let forecastPrice = currentPrice * Math.pow(1 + adjustedDaily, daysAhead);
 
-  // Clamp: 1 week max 1.3x, 1 month max 1.8x, 1 year max 3x, 2 years max 5x
+  // Clamp: 1 week max 1.3x, 1 month max 1.8x. From 1 year on, the max/min multiplier
+  // scales continuously with years (years=1 -> 3x, years=2 -> 5x, matching the previous
+  // fixed 1y/2y caps), with a symmetric downside floor to stop momentum blowing up to
+  // near-zero over a decade of compounded negative daily returns.
   if (daysAhead <= 7) {
     forecastPrice = Math.min(forecastPrice, currentPrice * 1.3);
     forecastPrice = Math.max(forecastPrice, currentPrice * 0.7);
   } else if (daysAhead <= 30) {
     forecastPrice = Math.min(forecastPrice, currentPrice * 1.8);
     forecastPrice = Math.max(forecastPrice, currentPrice * 0.3);
-  } else if (daysAhead >= 365 && daysAhead < 730) {
-    forecastPrice = Math.min(forecastPrice, currentPrice * 3);
-  } else if (daysAhead >= 730) {
-    forecastPrice = Math.min(forecastPrice, currentPrice * 5);
+  } else {
+    const maxMult = plausibleMultiplier(daysAhead);
+    forecastPrice = Math.min(forecastPrice, currentPrice * maxMult);
+    forecastPrice = Math.max(forecastPrice, currentPrice / maxMult);
   }
   forecastPrice = Math.max(0, forecastPrice);
 
@@ -1250,11 +1397,17 @@ function forecastMomentum(prices, currentPrice, indicators, daysAhead) {
 function forecastMeanReversion(prices, currentPrice, daysAhead) {
   const n = prices.length;
   if (n < 30) return null;
-  const lookback = Math.min(n, daysAhead <= 30 ? 90 : 365);
+  // For multi-year horizons, anchor the reversion target to as much price history as is
+  // available. Note: the app currently fetches only ~365 days of history (see loadData's
+  // market_chart?days=365 call), so in practice this reduces to the same 1-year window used
+  // for shorter horizons — a genuinely longer "long-run mean" would require fetching more
+  // history. This is a known limitation, not a multi-year average, despite reaching for `n`.
+  const lookback = Math.min(n, daysAhead <= 30 ? 90 : daysAhead <= 730 ? 365 : n);
   const recent = prices.slice(-lookback).filter(p => p > 0);
   if (recent.length < 20) return null;
   const geoMean = Math.exp(recent.reduce((s, p) => s + Math.log(p), 0) / recent.length);
-  const halfLife = daysAhead <= 7 ? 14 : daysAhead <= 30 ? 30 : daysAhead <= 365 ? 120 : 200;
+  const halfLife = daysAhead <= 7 ? 14 : daysAhead <= 30 ? 30 : daysAhead <= 365 ? 120
+    : daysAhead <= 730 ? 200 : 200 * Math.sqrt(daysAhead / 730);
   const reversionSpeed = 1 - Math.exp(-daysAhead / halfLife);
   const forecastPrice = currentPrice + (geoMean - currentPrice) * reversionSpeed;
   const returns = [];
@@ -1289,12 +1442,24 @@ function forecastConsensus(daysAhead) {
   };
 }
 
+// Horizons: 1 week, 1 month, then every year out to 10 years.
+const FORECAST_HORIZONS = [7, 30, 365, 730, 1095, 1460, 1825, 2190, 2555, 2920, 3285, 3650];
+
 function calculateForecasts(prices, currentPrice, indicators) {
-  const horizons = [7, 30, 365, 730];
+  const horizons = FORECAST_HORIZONS;
   const results = {};
 
   for (const daysAhead of horizons) {
-    const weights = { ...FORECAST_WEIGHTS[daysAhead] };
+    // 3–10 år: scenario-ränta (björn/bas/tjur) sammansatt från live-priset — se SCENARIO_RATES.
+    // 1–2 år behåller modellblandning + analytikerkonsensus. Vecka/månad oförändrat.
+    if (daysAhead >= 1095) {
+      const sc = buildScenarioForecast(currentPrice, daysAhead);
+      if (sc) sc.consensus = forecastConsensus(daysAhead);
+      results[daysAhead] = sc;
+      continue;
+    }
+
+    const weights = getForecastWeights(daysAhead);
     const methods = {};
 
     // Method A: Linear regression
@@ -1311,6 +1476,26 @@ function calculateForecasts(prices, currentPrice, indicators) {
 
     // Method E: Mean-reversion
     methods.E = forecastMeanReversion(prices, currentPrice, daysAhead);
+
+    // Method D (analyst consensus) is a fixed snapshot (see ANALYST_FORECASTS.lastUpdated)
+    // that can grow stale as the actual price moves — if it disagrees wildly with the
+    // trend/statistical methods, it would otherwise single-handedly drag the 1-2yr forecast
+    // far from what the other four methods agree on, which then also causes a jarring cliff
+    // once D disappears entirely beyond 2 years (no consensus data exists past that). Damp
+    // D's weight smoothly the more it diverges from the median of the other methods, instead
+    // of trusting a stale external estimate at full designed weight regardless of context.
+    if (methods.D && methods.D.price > 0) {
+      const others = ["A", "B", "C", "E"].map(k => methods[k]).filter(m => m && m.price > 0).map(m => m.price);
+      if (others.length > 0) {
+        others.sort((a, b) => a - b);
+        const median = others[Math.floor(others.length / 2)];
+        if (median > 0) {
+          const logRatio = Math.abs(Math.log(methods.D.price / median));
+          const damp = Math.max(0.08, Math.min(1, 0.22 / Math.max(logRatio, 0.001)));
+          weights.D *= damp;
+        }
+      }
+    }
 
     // Redistribute weights if a method returns null or gives non-positive price
     let totalWeight = 0;
@@ -1341,12 +1526,17 @@ function calculateForecasts(prices, currentPrice, indicators) {
       wLower += methods[key].lower * w;
     }
 
-    // Sentiment adjustment
+    // Sentiment adjustment — today's Fear&Greed-style reading is a short-lived, mean-reverting
+    // signal (its edge is contrarian bounces over days-to-weeks). Applying it as a flat +/-5%
+    // at every horizon would imply today's mood forecasts price 10 years out; instead decay
+    // its effect to zero by ~180 days so only short-horizon tabs are actually influenced by it.
     const sentimentVal = indicators.sentimentValue;
     if (typeof sentimentVal === "number") {
       let sentAdj = 1;
       if (sentimentVal <= 20) sentAdj = 1.05;
       else if (sentimentVal >= 80) sentAdj = 0.95;
+      const decay = Math.max(0, 1 - daysAhead / 180);
+      sentAdj = 1 + (sentAdj - 1) * decay;
       wPrice *= sentAdj;
       wUpper *= sentAdj;
       wLower *= sentAdj;
@@ -1369,7 +1559,14 @@ function calculateForecasts(prices, currentPrice, indicators) {
       365: { high: 80, medium: 150, low: 300 },
       730: { high: 100, medium: 200, low: 400 },
     };
-    const thresh = confThresholds[daysAhead] || confThresholds[365];
+    // Beyond 2 years there's no tuned table entry — widen the 1-year baseline thresholds
+    // by sqrt(years) so a 10-year forecast isn't graded on the same bar as a 1-year one.
+    let thresh = confThresholds[daysAhead];
+    if (!thresh) {
+      const scale = Math.sqrt(daysAhead / 365);
+      const base = confThresholds[365];
+      thresh = { high: base.high * scale, medium: base.medium * scale, low: base.low * scale };
+    }
     let confidenceLevel, confidenceClass;
     if (spreadPct < thresh.high) {
       confidenceLevel = "Hög"; confidenceClass = "forecast-conf-high";
@@ -1381,8 +1578,24 @@ function calculateForecasts(prices, currentPrice, indicators) {
       confidenceLevel = "Mycket låg"; confidenceClass = "forecast-conf-verylow";
     }
 
-    // Confidence bar position (0-100), scaled to crypto thresholds
-    const confBarPct = Math.max(0, Math.min(100, 100 - (spreadPct / thresh.low) * 100));
+    // Hard cap: no matter how tight the model agreement looks on paper, nobody can have
+    // "high confidence" in where a cryptocurrency trades 3-10 years out. This guards against
+    // the confidence label overstating certainty for long horizons purely because the
+    // (necessarily speculative) methods happen to agree with each other.
+    const confRank = { "Hög": 3, "Medel": 2, "Låg": 1, "Mycket låg": 0 };
+    const years = daysAhead / 365;
+    const confCap = years > 5 ? "Låg" : years > 2 ? "Medel" : null;
+    if (confCap && confRank[confidenceLevel] > confRank[confCap]) {
+      confidenceLevel = confCap;
+      confidenceClass = confCap === "Låg" ? "forecast-conf-low" : "forecast-conf-medium";
+    }
+
+    // Confidence bar position (0-100), scaled to crypto thresholds. Capped to stay
+    // consistent with the (possibly downgraded) confidenceLevel above — otherwise the bar
+    // could visually read as "near-high" while the badge next to it says "Låg".
+    const confBarCeilings = { "Hög": 100, "Medel": 65, "Låg": 35, "Mycket låg": 15 };
+    let confBarPct = Math.max(0, Math.min(100, 100 - (spreadPct / thresh.low) * 100));
+    confBarPct = Math.min(confBarPct, confBarCeilings[confidenceLevel]);
 
     results[daysAhead] = {
       price: wPrice,
@@ -1449,10 +1662,20 @@ function renderForecastTab(horizon) {
     unavail.className = "forecast-unavailable";
     unavail.textContent = "Prognos ej tillgänglig för denna horisont.";
     container.appendChild(unavail);
+    resetChartToHistorical(); // clear any leftover forecast overlay from a previously selected tab
     return;
   }
 
   const currentPrice = lastCurrentPrice;
+
+  // Target year label (helps orient the multi-year tabs, e.g. "Prognos för 2033")
+  const targetYear = new Date().getFullYear() + Math.round(horizon / 365);
+  if (horizon >= 365) {
+    const yearLabel = document.createElement("div");
+    yearLabel.className = "forecast-target-year";
+    yearLabel.textContent = `Prognos för ${targetYear}`;
+    container.appendChild(yearLabel);
+  }
 
   // Price display: low | FORECAST | high
   const pricesRow = document.createElement("div");
@@ -1462,7 +1685,7 @@ function renderForecastTab(horizon) {
   lowBound.className = "forecast-bound";
   const lowLabel = document.createElement("span");
   lowLabel.className = "forecast-bound-label";
-  lowLabel.textContent = "Lägsta";
+  lowLabel.textContent = fc.isScenario ? "Björn −10 %/år" : "Lägsta";
   const lowVal = document.createElement("span");
   lowVal.className = "forecast-bound-low";
   lowVal.textContent = fmtUsd(fc.lower);
@@ -1477,7 +1700,7 @@ function renderForecastTab(horizon) {
   mainPrice.className = "forecast-price-main";
   const mainSublabel = document.createElement("span");
   mainSublabel.className = "forecast-price-sublabel";
-  mainSublabel.textContent = "Prognos";
+  mainSublabel.textContent = fc.isScenario ? "Bas +15 %/år" : "Prognos";
   const mainVal = document.createElement("span");
   mainVal.className = "forecast-price-value";
   mainVal.textContent = fmtUsd(fc.price);
@@ -1492,7 +1715,7 @@ function renderForecastTab(horizon) {
   highBound.className = "forecast-bound";
   const highLabel = document.createElement("span");
   highLabel.className = "forecast-bound-label";
-  highLabel.textContent = "Högsta";
+  highLabel.textContent = fc.isScenario ? "Tjur +35 %/år" : "Högsta";
   const highVal = document.createElement("span");
   highVal.className = "forecast-bound-high";
   highVal.textContent = fmtUsd(fc.upper);
@@ -1520,6 +1743,14 @@ function renderForecastTab(horizon) {
   changeRow.appendChild(changeLbl);
   container.appendChild(changeRow);
 
+  if (fc.isScenario) {
+    renderScenarioTable(container, currentPrice);
+  }
+
+  // Confidence badge, method breakdown and confidence bar are statistical-model concepts —
+  // they only render on the model-based tabs (1 vecka / 1 månad). Scenario tabs are plain
+  // compounding examples with no statistical confidence to express.
+  if (!fc.isScenario) {
   // Confidence badge
   const confRow = document.createElement("div");
   confRow.className = "forecast-confidence-row";
@@ -1590,6 +1821,18 @@ function renderForecastTab(horizon) {
   barContainer.appendChild(barLabels);
   barContainer.appendChild(bar);
   container.appendChild(barContainer);
+
+  // Beyond 2 years there is no real analyst-consensus data — say so explicitly instead
+  // of silently omitting the table, so users don't mistake the absence for an error.
+  if (horizon > 730) {
+    const noConsensus = document.createElement("p");
+    noConsensus.className = "forecast-no-consensus";
+    noConsensus.textContent = "Ingen analytikerkonsensus finns publicerad så här långt fram — 1 och 2-årsflikarna " +
+      "vägs delvis mot externa analytikerestimat, vilket kan göra att siffran här skiljer sig från grannflikarna. " +
+      "Denna prognos bygger enbart på modellextrapolering (trend, utjämning, momentum och mean-reversion) " +
+      "och blir kraftigt mer osäker ju längre fram i tiden den pekar.";
+    container.appendChild(noConsensus);
+  }
 
   // Consensus section (only for 365d and 730d)
   if ((horizon === 365 || horizon === 730) && fc.methods.D && fc.methods.D.analysts) {
@@ -1684,12 +1927,23 @@ function renderForecastTab(horizon) {
     container.appendChild(consBox);
   }
 
+  } // end !fc.isScenario
+
   // Disclaimer
   const disc = document.createElement("p");
   disc.className = "forecast-disclaimer";
-  disc.textContent = "Prognoser baseras på historiska prisdata, tekniska indikatorer och analytikerestimat. " +
-    "Kryptovalutor är extremt volatila och dessa prognoser är INTE finansiell rådgivning. " +
-    "Gör alltid din egen research (DYOR) och investera bara pengar du har råd att förlora.";
+  disc.textContent = fc.isScenario
+    ? "Scenarierna ovan är ren sammansatt ränta från dagens pris — beräkningsexempel, inte prognoser. " +
+      "Ingen modell kan tillförlitligt förutsäga kryptopriser flera år fram i tiden. " +
+      "Detta är INTE finansiell rådgivning. Gör alltid din egen research (DYOR)."
+    : horizon > 730
+    ? "Prognoser för flera år framåt bygger enbart på matematisk extrapolering av historiska prisrörelser, " +
+      "utan någon fundamental analys (nätverksbruk, staking, adoption) — och är EXTREMT osäkra. Ingen modell " +
+      "kan tillförlitligt förutsäga kryptopriser flera år fram i tiden. Detta är INTE finansiell rådgivning. " +
+      "Gör alltid din egen research (DYOR) och investera bara pengar du har råd att förlora."
+    : "Prognoser baseras på historiska prisdata, tekniska indikatorer och analytikerestimat. " +
+      "Kryptovalutor är extremt volatila och dessa prognoser är INTE finansiell rådgivning. " +
+      "Gör alltid din egen research (DYOR) och investera bara pengar du har råd att förlora.";
   container.appendChild(disc);
 
   // Update chart with forecast data
@@ -1700,15 +1954,28 @@ function renderForecastTab(horizon) {
 let chartHistLabels = null;
 let chartHistDatasets = null;
 
+// Deep-clone a dataset, ensuring arrays are not shared references
+function cloneDataset(ds) {
+  const copy = { ...ds, data: [...ds.data] };
+  if (Array.isArray(ds.borderDash)) copy.borderDash = [...ds.borderDash];
+  return copy;
+}
+
+// Reset the chart to historical-only data (no forecast overlay). Used both as the first step
+// of drawing a new forecast, and standalone when a horizon has no forecast to show at all —
+// otherwise the previously-selected tab's forecast line would linger on screen.
+function resetChartToHistorical() {
+  if (!chart || !chartHistLabels) return;
+  chart.data.labels = [...chartHistLabels];
+  chart.data.datasets = chartHistDatasets.map(cloneDataset);
+  if (chart.options.plugins.annotation.annotations.todayLine) {
+    delete chart.options.plugins.annotation.annotations.todayLine;
+  }
+  chart.update();
+}
+
 function updateChartWithForecast(horizon, fc, currentPrice) {
   if (!chart) return;
-
-  // Deep-clone a dataset, ensuring arrays are not shared references
-  function cloneDataset(ds) {
-    const copy = { ...ds, data: [...ds.data] };
-    if (Array.isArray(ds.borderDash)) copy.borderDash = [...ds.borderDash];
-    return copy;
-  }
 
   // Save original historical data on first call
   if (!chartHistLabels) {
@@ -1732,14 +1999,25 @@ function updateChartWithForecast(horizon, fc, currentPrice) {
 
   // Number of interpolation points
   const points = Math.min(horizon, 60);
+  // Multi-year horizons repeat the same "month day" label every lap around the calendar
+  // (e.g. "jan 4" appearing 10 times over a decade) unless the year is included.
+  const dateFormat = horizon > 365 ? { year: "numeric", month: "short" } : { month: "short", day: "numeric" };
   for (let i = 0; i <= points; i++) {
     const d = new Date(lastDate);
     d.setDate(d.getDate() + Math.round((i / points) * horizon));
-    futureLabels.push(d.toLocaleDateString("sv-SE", { month: "short", day: "numeric" }));
+    futureLabels.push(d.toLocaleDateString("sv-SE", dateFormat));
     const t = i / points;
-    futurePrices.push(currentPrice + (fc.price - currentPrice) * t);
-    futureUpper.push(currentPrice + (fc.upper - currentPrice) * t);
-    futureLower.push(currentPrice + (fc.lower - currentPrice) * t);
+    if (fc.isScenario) {
+      const years = horizon / 365;
+      const elapsedYears = t * years;
+      futurePrices.push(currentPrice * Math.pow(1 + SCENARIO_RATES.base, elapsedYears));
+      futureUpper.push(currentPrice * Math.pow(1 + SCENARIO_RATES.bull, elapsedYears));
+      futureLower.push(currentPrice * Math.pow(1 + SCENARIO_RATES.bear, elapsedYears));
+    } else {
+      futurePrices.push(currentPrice + (fc.price - currentPrice) * t);
+      futureUpper.push(currentPrice + (fc.upper - currentPrice) * t);
+      futureLower.push(currentPrice + (fc.lower - currentPrice) * t);
+    }
   }
 
   // Extend labels with future dates

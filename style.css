@@ -1058,38 +1058,104 @@ select:focus-visible {
 
 .forecast-tabs {
   display: flex;
-  gap: 0;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
   margin-bottom: 16px;
-  border: 1px solid #2b3252;
-  border-radius: 8px;
-  overflow: hidden;
 }
 
 .forecast-tab {
-  flex: 1;
+  flex: 0 1 68px;
+  min-width: 58px;
   padding: 8px 12px;
-  border: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: #8b91ab;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
   font-family: inherit;
-}
-
-.forecast-tab:not(:last-child) {
-  border-right: 1px solid #2b3252;
 }
 
 .forecast-tab:hover {
   background: rgba(109, 213, 237, 0.08);
-  color: #c7cdf0;
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-strong);
 }
 
 .forecast-tab-active {
   background: rgba(109, 213, 237, 0.15);
-  color: #6dd5ed;
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.forecast-target-year {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+.forecast-no-consensus {
+  font-size: 0.78rem;
+  color: var(--color-orange);
+  background: rgba(230, 126, 34, 0.08);
+  border: 1px solid rgba(230, 126, 34, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin: 10px 0;
+  line-height: 1.4;
+}
+
+.forecast-scenario-wrap {
+  margin: 14px 0 8px;
+}
+
+.forecast-scenario-intro,
+.forecast-scenario-note {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+  margin: 0 0 10px;
+}
+
+.forecast-scenario-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.forecast-scenario-table th,
+.forecast-scenario-table td {
+  padding: 8px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.forecast-scenario-table th:first-child,
+.forecast-scenario-table td:first-child {
+  text-align: left;
+}
+
+.forecast-scenario-table th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.forecast-scenario-bear { color: #ff6f61; }
+.forecast-scenario-base { color: #f4d35e; font-weight: 700; }
+.forecast-scenario-bull { color: #4ce081; }
+
+@media (max-width: 600px) {
+  .forecast-tab {
+    flex: 0 1 52px;
+    min-width: 48px;
+    padding: 7px 6px;
+    font-size: 0.78rem;
+  }
 }
 
 .forecast-content {
