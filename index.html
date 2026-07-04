@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0f1117">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Aktier">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 </head>
@@ -88,6 +88,31 @@
           <span id="ath-distance" class="value">–</span>
         </div>
       </div>
+    </section>
+
+    <section id="volume-card" class="card">
+      <h2>Volymanalys <span class="ta-badge">TA</span></h2>
+      <div class="vol-header">
+        <span id="vol-level-badge" class="vol-badge vol-unknown">–</span>
+        <span id="vol-rvol-summary" class="vol-rvol-summary">–</span>
+      </div>
+      <div class="indicators">
+        <div class="indicator">
+          <span class="label">Relativ volym (RVOL 20d)</span>
+          <span id="vol-rvol-value" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">7d-avvikelse</span>
+          <span id="vol-7d-trend" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Prisriktning (24h)</span>
+          <span id="vol-direction" class="value">–</span>
+        </div>
+      </div>
+      <p id="vol-insight" class="vol-insight">Laddar volymanalys…</p>
+      <p id="vol-tendency" class="vol-tendency"></p>
+      <p class="vol-help">RVOL = dagens volym ÷ 20-dagars snitt. Hög volym bekräftar prisrörelser; låg volym ökar fakeout-risk.</p>
     </section>
 
     <section id="supply-card" class="card">
@@ -573,6 +598,6 @@
     </footer>
   </div>
 
-  <script src="script.js?v=5"></script>
+  <script src="script.js?v=6"></script>
 </body>
 </html>
