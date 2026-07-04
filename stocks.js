@@ -1,3 +1,7 @@
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
+
 // ================================================================
 // STOCKS.JS -- Aktieanalys med tekniska indikatorer
 // Datakallor: Twelve Data (kurser/TA), Finnhub (nyheter), Alpha Vantage (fundamental)

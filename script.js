@@ -1,3 +1,7 @@
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
+
 // Datakällor: CoinGecko (pris/historik/marknad), Binance (oberoende prisjämförelse),
 // alternative.me (Crypto Fear & Greed Index), DefiLlama (TVL/staking) och Owlracle (gas).
 const COINGECKO_BASE = "/api/coingecko";

@@ -1,0 +1,33 @@
+{
+  "name": "Aktieanalys – Raketer & Signaler",
+  "short_name": "Aktier",
+  "description": "Köp/sälj-signaler, rakettips och teknisk analys för svenska och amerikanska aktier.",
+  "start_url": "/stocks.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f1117",
+  "background_color": "#0f1117",
+  "lang": "sv",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Raketer idag",
+      "short_name": "Raketer",
+      "url": "/stocks.html#rockets",
+      "description": "Visa dagens rakettips"
+    },
+    {
+      "name": "ETH Tracker",
+      "short_name": "ETH",
+      "url": "/index.html",
+      "description": "Ethereum pris och analys"
+    }
+  ]
+}
