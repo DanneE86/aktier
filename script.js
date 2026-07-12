@@ -1349,7 +1349,7 @@ function renderChart(labels, prices, supportLevels = [], resistanceLevels = []) 
 // ─── Prisprognos ──────────────────────────────────────────────────────────
 
 const ANALYST_FORECASTS = {
-  lastUpdated: "2026-06-19",
+  lastUpdated: "2026-07-12",
   horizons: {
     365: {
       analysts: [
@@ -1370,8 +1370,76 @@ const ANALYST_FORECASTS = {
         { name: "PricePrediction.net", low: 7184, avg: 7578, high: 7972 },
       ],
       year: 2028
+    },
+    1460: {
+      year: 2030,
+      isRangeOutlook: true,
     }
   }
+};
+
+// Analytiker- och bankprognoser för ETH 2030 (sammanställt från offentliga källor, juli 2026).
+// Spridda bedömningar — visas som intervall, inte som en enda "sanning".
+const ANALYST_2030_OUTLOOK = {
+  lastUpdated: "2026-07-12",
+  year: 2030,
+  intro:
+    "Analytiker och banker är oense om ETH 2030. Tabellen visar fyra vanliga scenarier " +
+    "med prisintervall i dollar — inte våra egna beräkningar.",
+  scenarios: [
+    {
+      id: "conservative",
+      label: "Konservativ",
+      plainLabel: "Låg tillväxt",
+      low: 2000,
+      high: 3500,
+      growthHint: "~5 % per år",
+      sources: "Coinbase, CoinCodex, Binance m.fl.",
+      plainText:
+        "ETH växer långsamt, ungefär som en mogen tillgång. " +
+        "Priset dubblas i bästa fall från dagens nivå.",
+      cssClass: "forecast-scenario-bear",
+    },
+    {
+      id: "moderate",
+      label: "Realistisk",
+      plainLabel: "Måttlig adoption",
+      low: 8000,
+      high: 12000,
+      growthHint: "Stadig adoption",
+      sources: "Vanliga analytiker och modeller",
+      plainText:
+        "ETH fortsätter växa i takt med ökad användning av DeFi, staking och Layer 2. " +
+        "Det mest citerade mittintervallet bland analytiker.",
+      cssClass: "forecast-scenario-base",
+    },
+    {
+      id: "bullish",
+      label: "Bullish",
+      plainLabel: "Stark adoption",
+      low: 15000,
+      high: 25000,
+      growthHint: "Hög efterfrågan",
+      sources: "VanEck och bullish analytiker",
+      plainText:
+        "ETH blir en central del av det digitala finanssystemet. " +
+        "Stark institutionell efterfrågan driver priset betydligt högre.",
+      cssClass: "forecast-scenario-bull",
+    },
+    {
+      id: "very_bullish",
+      label: "Mycket bullish",
+      plainLabel: "Extrem adoption",
+      low: 22000,
+      high: 40000,
+      growthHint: "Reservtillgång",
+      sources: "VanEck (basfall), Standard Chartered",
+      plainText:
+        "ETH ses som global digital reservtillgång, jämförbar med guld. " +
+        "Extrema scenarier — låg sannolikhet men citeras av storbanker.",
+      cssClass: "forecast-scenario-bull",
+    },
+  ],
 };
 
 const FORECAST_WEIGHTS = {
@@ -1425,7 +1493,24 @@ function plausibleMultiplier(daysAhead) {
 // multi-year crypto price, but "what if it compounds at X%/yr" is a transparent calculation.
 const SCENARIO_RATES = { bear: -0.10, base: 0.15, bull: 0.35 };
 
+function buildAnalyst2030Forecast(currentPrice) {
+  const realistic = ANALYST_2030_OUTLOOK.scenarios.find(s => s.id === "moderate");
+  const conservative = ANALYST_2030_OUTLOOK.scenarios.find(s => s.id === "conservative");
+  const extreme = ANALYST_2030_OUTLOOK.scenarios.find(s => s.id === "very_bullish");
+  const mid = realistic ? (realistic.low + realistic.high) / 2 : 10000;
+  return {
+    price: mid,
+    upper: extreme?.high ?? 40000,
+    lower: conservative?.low ?? 2000,
+    changePct: currentPrice > 0 ? ((mid - currentPrice) / currentPrice) * 100 : 0,
+    isScenario: true,
+    isAnalyst2030: true,
+    daysAhead: 1460,
+  };
+}
+
 function buildScenarioForecast(currentPrice, daysAhead) {
+  if (daysAhead === 1460) return buildAnalyst2030Forecast(currentPrice);
   if (!(currentPrice > 0)) return null;
   const years = daysAhead / 365;
   const bear = currentPrice * Math.pow(1 + SCENARIO_RATES.bear, years);
@@ -1494,6 +1579,111 @@ function renderScenarioTable(container, currentPrice) {
   note.className = "forecast-scenario-note";
   note.textContent =
     "Beräkningsexempel, inte prognoser. Kryptopriser rör sig sällan linjärt år för år.";
+  wrap.appendChild(note);
+  container.appendChild(wrap);
+}
+
+function render2030AnalystOutlook(container, currentPrice) {
+  const wrap = document.createElement("div");
+  wrap.className = "forecast-2030-wrap";
+
+  const intro = document.createElement("p");
+  intro.className = "forecast-2030-intro";
+  intro.textContent = ANALYST_2030_OUTLOOK.intro;
+  wrap.appendChild(intro);
+
+  if (currentPrice > 0) {
+    const today = document.createElement("p");
+    today.className = "forecast-2030-today";
+    today.textContent =
+      `ETH idag: cirka ${fmtUsdRound(currentPrice)}. ` +
+      "Prognoserna nedan är vad analytiker tror priset kan vara år 2030 — inte garanterat.";
+    wrap.appendChild(today);
+  }
+
+  const table = document.createElement("table");
+  table.className = "forecast-2030-table";
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  ["Scenario", "Pris 2030", "Källor", "Vad det betyder"].forEach(text => {
+    const th = document.createElement("th");
+    th.textContent = text;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  ANALYST_2030_OUTLOOK.scenarios.forEach(sc => {
+    const tr = document.createElement("tr");
+
+    const labelCell = document.createElement("td");
+    labelCell.className = "forecast-2030-label";
+    labelCell.dataset.label = "Scenario";
+    const strong = document.createElement("strong");
+    strong.textContent = sc.plainLabel;
+    strong.className = sc.cssClass;
+    labelCell.appendChild(strong);
+    const sub = document.createElement("span");
+    sub.className = "forecast-2030-sublabel";
+    sub.textContent = sc.growthHint;
+    labelCell.appendChild(document.createElement("br"));
+    labelCell.appendChild(sub);
+
+    const rangeCell = document.createElement("td");
+    rangeCell.className = sc.cssClass;
+    rangeCell.dataset.label = "Pris 2030";
+    rangeCell.textContent = `${fmtUsdRound(sc.low)} – ${fmtUsdRound(sc.high)}`;
+    if (currentPrice > 0) {
+      const multLow = (sc.low / currentPrice).toFixed(1);
+      const multHigh = (sc.high / currentPrice).toFixed(1);
+      const mult = document.createElement("span");
+      mult.className = "forecast-2030-mult";
+      mult.textContent = ` (${multLow}–${multHigh}× dagens pris)`;
+      rangeCell.appendChild(mult);
+    }
+
+    const srcCell = document.createElement("td");
+    srcCell.className = "forecast-2030-sources";
+    srcCell.dataset.label = "Källor";
+    srcCell.textContent = sc.sources;
+
+    const textCell = document.createElement("td");
+    textCell.className = "forecast-2030-plain";
+    textCell.dataset.label = "Vad det betyder";
+    textCell.textContent = sc.plainText;
+
+    tr.appendChild(labelCell);
+    tr.appendChild(rangeCell);
+    tr.appendChild(srcCell);
+    tr.appendChild(textCell);
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+
+  const realistic = ANALYST_2030_OUTLOOK.scenarios.find(s => s.id === "moderate");
+  const summary = document.createElement("div");
+  summary.className = "forecast-2030-summary";
+  const sumStrong = document.createElement("strong");
+  sumStrong.textContent = "Sammanfattning: ";
+  summary.appendChild(sumStrong);
+  summary.appendChild(document.createTextNode("De flesta analytiker landar mellan "));
+  const sumRange = document.createElement("span");
+  sumRange.className = "forecast-scenario-base";
+  sumRange.textContent = `${fmtUsdRound(realistic.low)}–${fmtUsdRound(realistic.high)}`;
+  summary.appendChild(sumRange);
+  summary.appendChild(document.createTextNode(
+    " år 2030. Extrema scenarier ($40 000+) finns men är ovanliga. " +
+    "Spridningen visar hur osäkra långsiktiga kryptoprognoser är."
+  ));
+  wrap.appendChild(summary);
+
+  const note = document.createElement("p");
+  note.className = "forecast-scenario-note";
+  note.textContent =
+    "Källor: offentliga analytikerprognoser (Coinbase, CoinCodex, Binance, VanEck, Standard Chartered m.fl.). " +
+    "Uppdaterad " + ANALYST_2030_OUTLOOK.lastUpdated + ". INTE finansiell rådgivning.";
   wrap.appendChild(note);
   container.appendChild(wrap);
 }
@@ -1971,7 +2161,7 @@ function renderForecastTab(horizon) {
   lowBound.className = "forecast-bound";
   const lowLabel = document.createElement("span");
   lowLabel.className = "forecast-bound-label";
-  lowLabel.textContent = fc.isScenario ? "Björn −10 %/år" : "Lägsta";
+  lowLabel.textContent = fc.isAnalyst2030 ? "Konservativ ($2k–3,5k)" : fc.isScenario ? "Björn −10 %/år" : "Lägsta";
   const lowVal = document.createElement("span");
   lowVal.className = "forecast-bound-low";
   lowVal.textContent = fmtUsd(fc.lower);
@@ -1986,7 +2176,7 @@ function renderForecastTab(horizon) {
   mainPrice.className = "forecast-price-main";
   const mainSublabel = document.createElement("span");
   mainSublabel.className = "forecast-price-sublabel";
-  mainSublabel.textContent = fc.isScenario ? "Bas +15 %/år" : "Prognos";
+  mainSublabel.textContent = fc.isAnalyst2030 ? "Realistiskt mitt ($10k)" : fc.isScenario ? "Bas +15 %/år" : "Prognos";
   const mainVal = document.createElement("span");
   mainVal.className = "forecast-price-value";
   mainVal.textContent = fmtUsd(fc.price);
@@ -2001,7 +2191,7 @@ function renderForecastTab(horizon) {
   highBound.className = "forecast-bound";
   const highLabel = document.createElement("span");
   highLabel.className = "forecast-bound-label";
-  highLabel.textContent = fc.isScenario ? "Tjur +35 %/år" : "Högsta";
+  highLabel.textContent = fc.isAnalyst2030 ? "Mycket bullish (upp till $40k)" : fc.isScenario ? "Tjur +35 %/år" : "Högsta";
   const highVal = document.createElement("span");
   highVal.className = "forecast-bound-high";
   highVal.textContent = fmtUsd(fc.upper);
@@ -2029,7 +2219,9 @@ function renderForecastTab(horizon) {
   changeRow.appendChild(changeLbl);
   container.appendChild(changeRow);
 
-  if (fc.isScenario) {
+  if (fc.isAnalyst2030) {
+    render2030AnalystOutlook(container, currentPrice);
+  } else if (fc.isScenario) {
     renderScenarioTable(container, currentPrice);
   }
 
@@ -2218,7 +2410,11 @@ function renderForecastTab(horizon) {
   // Disclaimer
   const disc = document.createElement("p");
   disc.className = "forecast-disclaimer";
-  disc.textContent = fc.isScenario
+  disc.textContent = fc.isAnalyst2030
+    ? "Analytikerprognoser är spekulativa och spridda — ingen vet var ETH står 2030. " +
+      "Intervallen speglar vad banker och analysfirmor publicerat, inte vår egen modell. " +
+      "Detta är INTE finansiell rådgivning. Gör alltid din egen research (DYOR)."
+    : fc.isScenario
     ? "Scenarierna ovan är ren sammansatt ränta från dagens pris — beräkningsexempel, inte prognoser. " +
       "Ingen modell kan tillförlitligt förutsäga kryptopriser flera år fram i tiden. " +
       "Detta är INTE finansiell rådgivning. Gör alltid din egen research (DYOR)."

@@ -47,6 +47,7 @@ Värdera baserat på:
 - Crypto Fear & Greed Index (sentiment)
 - Prishistorik-graf (1 år) med MA-linjer
 - Auto-uppdatering varje minut
+- **2030-analytikerprognoser** (flik i Prisprognos): konservativ/realistisk/bullish-intervall från Coinbase, VanEck, Standard Chartered m.fl. med klarspråk och disclaimer
 
 ## Verktyg du har tillgång till
 - Webbsökning för att hitta aktuella artiklar och trender

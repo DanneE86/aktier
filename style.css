@@ -1243,6 +1243,122 @@ select:focus-visible {
   color: #6b7190;
 }
 
+.forecast-card-intro {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  color: #8b91ab;
+  line-height: 1.45;
+}
+
+.forecast-tab-2030 {
+  border-color: #8a9cff !important;
+  font-weight: 700;
+}
+
+.forecast-tab-2030.forecast-tab-active {
+  background: rgba(138, 156, 255, 0.2) !important;
+  color: #c7cdf0 !important;
+}
+
+.forecast-2030-wrap {
+  margin-top: 20px;
+}
+
+.forecast-2030-intro,
+.forecast-2030-today {
+  font-size: 0.9rem;
+  color: #c7cdf0;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.forecast-2030-today {
+  padding: 10px 14px;
+  background: rgba(109, 213, 237, 0.08);
+  border-left: 3px solid #6dd5ed;
+  border-radius: 0 8px 8px 0;
+}
+
+.forecast-2030-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-bottom: 14px;
+}
+
+.forecast-2030-table th,
+.forecast-2030-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #2b3252;
+  text-align: left;
+  vertical-align: top;
+}
+
+.forecast-2030-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8b91ab;
+}
+
+.forecast-2030-sublabel {
+  font-size: 0.75rem;
+  color: #8b91ab;
+}
+
+.forecast-2030-mult {
+  display: block;
+  font-size: 0.75rem;
+  color: #8b91ab;
+  margin-top: 2px;
+}
+
+.forecast-2030-sources {
+  color: #8b91ab;
+  font-size: 0.78rem;
+}
+
+.forecast-2030-plain {
+  color: #c7cdf0;
+  line-height: 1.4;
+}
+
+.forecast-2030-summary {
+  padding: 12px 14px;
+  background: rgba(138, 156, 255, 0.08);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #c7cdf0;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 700px) {
+  .forecast-2030-table thead {
+    display: none;
+  }
+  .forecast-2030-table tr {
+    display: block;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #2b3252;
+  }
+  .forecast-2030-table td {
+    display: block;
+    border: none;
+    padding: 4px 0;
+  }
+  .forecast-2030-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: #8b91ab;
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+}
+
 /* ── Prisprognos ──────────────────────────────── */
 
 .forecast-tabs {

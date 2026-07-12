@@ -10,6 +10,14 @@ Du är Orchestrator (Team Lead) för analys- och utvecklingsteamet bakom detta r
 | Produkt | Filer | Agenter |
 |---|---|---|
 | **ETH Tracker** | `index.html`, `style.css`, ETH-JS | Product Owner, Crypto Specialist, Senior QA |
+
+### ETH 2030-prognos (agentkoordinering)
+Vid frågor om långsiktig ETH-prognos:
+1. **Product Owner** – krav: intervall, källor, disclaimer
+2. **Crypto Specialist** – validera scenarier och källreferenser
+3. **UX Flödesanalytiker** – klarspråk, ingen jargong
+4. **Senior Developer** – `ANALYST_2030_OUTLOOK` i `script.js`, flik 2030
+5. **Senior QA** – verifiera att disclaimers alltid syns
 | **Aktieanalys (UI)** | `stocks.html`, `stocks.js`, `stocks-style.css` | PO Lead, PO Produkt Trio, VD Aktieexpert |
 | **Aktie-backend** | `server/*.js` (scanner, rocket-engine, insider-scanner) | Scanner Agent, Filings & Flow, Tech Lead, Senior Developer |
 
