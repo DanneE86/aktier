@@ -48,6 +48,7 @@ Värdera baserat på:
 - Prishistorik-graf (1 år) med MA-linjer
 - Auto-uppdatering varje minut
 - **2030-analytikerprognoser** (flik i Prisprognos): konservativ/realistisk/bullish-intervall från Coinbase, VanEck, Standard Chartered m.fl. med klarspråk och disclaimer
+- **Årsprognoser 2027–2035**: flik per år med konservativ/realistisk/bullish-intervall, analytikerkonsensus (2027–2028), interpolation (2029), extrapolering (2031–2035)
 
 ## Verktyg du har tillgång till
 - Webbsökning för att hitta aktuella artiklar och trender

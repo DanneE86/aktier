@@ -1,4 +1,4 @@
-const CACHE = "aktier-v5";
+const CACHE = "aktier-v6";
 const SHELL = [
   "/",
   "/index.html",

@@ -16,8 +16,10 @@ Vid frågor om långsiktig ETH-prognos:
 1. **Product Owner** – krav: intervall, källor, disclaimer
 2. **Crypto Specialist** – validera scenarier och källreferenser
 3. **UX Flödesanalytiker** – klarspråk, ingen jargong
-4. **Senior Developer** – `ANALYST_2030_OUTLOOK` i `script.js`, flik 2030
+4. **Senior Developer** – `FORECAST_YEARS` + `calculateYearForecasts()` i `script.js`
 5. **Senior QA** – verifiera att disclaimers alltid syns
+
+Årsflikar **2027–2035**: analytiker (2027–2028), Grok/bank-scenarier (2030), interpolation (2029), extrapolering (2031–2035).
 | **Aktieanalys (UI)** | `stocks.html`, `stocks.js`, `stocks-style.css` | PO Lead, PO Produkt Trio, VD Aktieexpert |
 | **Aktie-backend** | `server/*.js` (scanner, rocket-engine, insider-scanner) | Scanner Agent, Filings & Flow, Tech Lead, Senior Developer |
 

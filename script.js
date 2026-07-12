@@ -1379,7 +1379,6 @@ const ANALYST_FORECASTS = {
 };
 
 // Analytiker- och bankprognoser för ETH 2030 (sammanställt från offentliga källor, juli 2026).
-// Spridda bedömningar — visas som intervall, inte som en enda "sanning".
 const ANALYST_2030_OUTLOOK = {
   lastUpdated: "2026-07-12",
   year: 2030,
@@ -1442,6 +1441,131 @@ const ANALYST_2030_OUTLOOK = {
   ],
 };
 
+// Årsprognoser slutet av varje kalenderår (2027–2035).
+const FORECAST_YEARS = [2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035];
+
+function arrayMean(arr) {
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function buildOutlookFromAnalysts(analysts, year, source) {
+  const lows = analysts.map(a => a.low);
+  const highs = analysts.map(a => a.high);
+  const avgs = analysts.map(a => a.avg);
+  const mid = Math.round(arrayMean(avgs));
+  return {
+    year,
+    source,
+    conservative: { low: Math.min(...lows), high: Math.round(arrayMean(lows)), label: "Konservativ" },
+    realistic: { low: Math.round(mid * 0.85), high: Math.round(mid * 1.15), label: "Realistisk" },
+    bullish: { low: Math.round(arrayMean(highs) * 0.9), high: Math.max(...highs), label: "Bullish" },
+    mid,
+    analysts,
+    plainText: `Baserat på ${analysts.length} publicerade analytikerprognoser för slutet av ${year}.`,
+  };
+}
+
+function build2030OutlookFromScenarios() {
+  const sc = ANALYST_2030_OUTLOOK.scenarios;
+  const cons = sc.find(s => s.id === "conservative");
+  const mod = sc.find(s => s.id === "moderate");
+  const bull = sc.find(s => s.id === "bullish");
+  const extreme = sc.find(s => s.id === "very_bullish");
+  return {
+    year: 2030,
+    source: "Analytiker och banker (Coinbase, VanEck, Standard Chartered m.fl.)",
+    conservative: { low: cons.low, high: cons.high, label: cons.plainLabel },
+    realistic: { low: mod.low, high: mod.high, label: mod.plainLabel },
+    bullish: { low: bull.low, high: extreme.high, label: "Bullish till extrem" },
+    mid: Math.round((mod.low + mod.high) / 2),
+    scenarios: sc,
+    analysts: null,
+    plainText: ANALYST_2030_OUTLOOK.intro,
+  };
+}
+
+function interpolateYearOutlook(from, to, year) {
+  const t = (year - from.year) / (to.year - from.year);
+  const lerp = (a, b) => Math.round(a + (b - a) * t);
+  const band = (a, b) => ({ low: lerp(a.low, b.low), high: lerp(a.high, b.high), label: a.label });
+  return {
+    year,
+    source: `Interpolerat mellan ${from.year} och ${to.year}`,
+    conservative: band(from.conservative, to.conservative),
+    realistic: band(from.realistic, to.realistic),
+    bullish: band(from.bullish, to.bullish),
+    mid: lerp(from.mid, to.mid),
+    analysts: null,
+    plainText: `Mellan ${from.year} (${fmtUsdRound(from.mid)}) och ${to.year} (${fmtUsdRound(to.mid)}) — inga egna analytiker för ${year}.`,
+  };
+}
+
+function extrapolateYearOutlook(base, year) {
+  const yearsAhead = year - base.year;
+  const grow = (v, rate) => Math.round(v * Math.pow(1 + rate, yearsAhead));
+  return {
+    year,
+    source: `Extrapolerat ${yearsAhead} år från ${base.year}-prognos`,
+    conservative: {
+      low: grow(base.conservative.low, 0.05),
+      high: grow(base.conservative.high, 0.05),
+      label: "Konservativ",
+    },
+    realistic: {
+      low: grow(base.realistic.low, 0.12),
+      high: grow(base.realistic.high, 0.12),
+      label: "Realistisk",
+    },
+    bullish: {
+      low: grow(base.bullish.low, 0.18),
+      high: grow(base.bullish.high, 0.18),
+      label: "Bullish",
+    },
+    mid: grow(base.mid, 0.12),
+    analysts: null,
+    plainText: `Extrapolerat från 2030 med antagen tillväxt: konservativ 5 %, realistisk 12 %, bullish 18 % per år.`,
+  };
+}
+
+function getYearOutlookData() {
+  const y2027 = buildOutlookFromAnalysts(
+    ANALYST_FORECASTS.horizons[365].analysts, 2027,
+    "Analytikerkonsensus (Changelly, CoinCodex, InvestingHaven m.fl.)"
+  );
+  const y2028 = buildOutlookFromAnalysts(
+    ANALYST_FORECASTS.horizons[730].analysts, 2028,
+    "Analytikerkonsensus (Changelly, CoinCodex, Cryptopolitan m.fl.)"
+  );
+  const y2030 = build2030OutlookFromScenarios();
+  const y2029 = interpolateYearOutlook(y2028, y2030, 2029);
+  const out = { 2027: y2027, 2028: y2028, 2029: y2029, 2030: y2030 };
+  for (let y = 2031; y <= 2035; y++) {
+    out[y] = extrapolateYearOutlook(y2030, y);
+  }
+  return out;
+}
+
+function buildYearEndForecast(outlook, currentPrice) {
+  return {
+    price: outlook.mid,
+    upper: outlook.bullish.high,
+    lower: outlook.conservative.low,
+    changePct: currentPrice > 0 ? ((outlook.mid - currentPrice) / currentPrice) * 100 : 0,
+    isYearOutlook: true,
+    year: outlook.year,
+    outlook,
+  };
+}
+
+function calculateYearForecasts(currentPrice) {
+  const data = getYearOutlookData();
+  const results = {};
+  for (const year of FORECAST_YEARS) {
+    results[year] = buildYearEndForecast(data[year], currentPrice);
+  }
+  return results;
+}
+
 const FORECAST_WEIGHTS = {
   7:   { A: 0.20, B: 0.25, C: 0.30, D: 0,    E: 0.25 },
   30:  { A: 0.20, B: 0.20, C: 0.25, D: 0.10, E: 0.25 },
@@ -1493,24 +1617,7 @@ function plausibleMultiplier(daysAhead) {
 // multi-year crypto price, but "what if it compounds at X%/yr" is a transparent calculation.
 const SCENARIO_RATES = { bear: -0.10, base: 0.15, bull: 0.35 };
 
-function buildAnalyst2030Forecast(currentPrice) {
-  const realistic = ANALYST_2030_OUTLOOK.scenarios.find(s => s.id === "moderate");
-  const conservative = ANALYST_2030_OUTLOOK.scenarios.find(s => s.id === "conservative");
-  const extreme = ANALYST_2030_OUTLOOK.scenarios.find(s => s.id === "very_bullish");
-  const mid = realistic ? (realistic.low + realistic.high) / 2 : 10000;
-  return {
-    price: mid,
-    upper: extreme?.high ?? 40000,
-    lower: conservative?.low ?? 2000,
-    changePct: currentPrice > 0 ? ((mid - currentPrice) / currentPrice) * 100 : 0,
-    isScenario: true,
-    isAnalyst2030: true,
-    daysAhead: 1460,
-  };
-}
-
 function buildScenarioForecast(currentPrice, daysAhead) {
-  if (daysAhead === 1460) return buildAnalyst2030Forecast(currentPrice);
   if (!(currentPrice > 0)) return null;
   const years = daysAhead / 365;
   const bear = currentPrice * Math.pow(1 + SCENARIO_RATES.bear, years);
@@ -1583,108 +1690,177 @@ function renderScenarioTable(container, currentPrice) {
   container.appendChild(wrap);
 }
 
-function render2030AnalystOutlook(container, currentPrice) {
+function renderYearOutlookDetail(container, fc, currentPrice) {
+  const o = fc.outlook;
   const wrap = document.createElement("div");
-  wrap.className = "forecast-2030-wrap";
+  wrap.className = "forecast-year-wrap";
 
   const intro = document.createElement("p");
-  intro.className = "forecast-2030-intro";
-  intro.textContent = ANALYST_2030_OUTLOOK.intro;
+  intro.className = "forecast-year-intro";
+  intro.textContent = o.plainText;
   wrap.appendChild(intro);
 
-  if (currentPrice > 0) {
-    const today = document.createElement("p");
-    today.className = "forecast-2030-today";
-    today.textContent =
-      `ETH idag: cirka ${fmtUsdRound(currentPrice)}. ` +
-      "Prognoserna nedan är vad analytiker tror priset kan vara år 2030 — inte garanterat.";
-    wrap.appendChild(today);
-  }
+  const source = document.createElement("p");
+  source.className = "forecast-year-source";
+  source.textContent = `Källa: ${o.source}`;
+  wrap.appendChild(source);
 
-  const table = document.createElement("table");
-  table.className = "forecast-2030-table";
-  const thead = document.createElement("thead");
+  const bandTable = document.createElement("table");
+  bandTable.className = "forecast-year-bands";
+  const head = document.createElement("thead");
   const headRow = document.createElement("tr");
-  ["Scenario", "Pris 2030", "Källor", "Vad det betyder"].forEach(text => {
+  ["Scenario", "Prisintervall", "Mitt"].forEach(t => {
     const th = document.createElement("th");
-    th.textContent = text;
+    th.textContent = t;
     headRow.appendChild(th);
   });
-  thead.appendChild(headRow);
+  head.appendChild(headRow);
+  bandTable.appendChild(head);
+
+  const tbody = document.createElement("tbody");
+  [
+    { band: o.conservative, cls: "forecast-scenario-bear" },
+    { band: o.realistic, cls: "forecast-scenario-base" },
+    { band: o.bullish, cls: "forecast-scenario-bull" },
+  ].forEach(({ band, cls }) => {
+    const tr = document.createElement("tr");
+    const labelTd = document.createElement("td");
+    labelTd.className = cls;
+    labelTd.textContent = band.label;
+    const rangeTd = document.createElement("td");
+    rangeTd.textContent = `${fmtUsdRound(band.low)} – ${fmtUsdRound(band.high)}`;
+    if (currentPrice > 0) {
+      const mult = document.createElement("span");
+      mult.className = "forecast-2030-mult";
+      mult.textContent = ` (${(band.low / currentPrice).toFixed(1)}–${(band.high / currentPrice).toFixed(1)}× idag)`;
+      rangeTd.appendChild(mult);
+    }
+    const midTd = document.createElement("td");
+    midTd.textContent = fmtUsdRound((band.low + band.high) / 2);
+    tr.appendChild(labelTd);
+    tr.appendChild(rangeTd);
+    tr.appendChild(midTd);
+    tbody.appendChild(tr);
+  });
+  bandTable.appendChild(tbody);
+  wrap.appendChild(bandTable);
+
+  if (o.analysts?.length) {
+    const consBox = document.createElement("div");
+    consBox.className = "forecast-consensus";
+    const consTitle = document.createElement("div");
+    consTitle.className = "forecast-consensus-title";
+    consTitle.textContent = `Analytiker för slutet av ${o.year}`;
+    consBox.appendChild(consTitle);
+
+    const table = document.createElement("table");
+    table.className = "forecast-consensus-table";
+    const thead = document.createElement("thead");
+    const hr = document.createElement("tr");
+    ["Analytiker", "Lägsta", "Snitt", "Högsta"].forEach(t => {
+      const th = document.createElement("th");
+      th.textContent = t;
+      hr.appendChild(th);
+    });
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    const tb = document.createElement("tbody");
+    o.analysts.forEach(a => {
+      const tr = document.createElement("tr");
+      ["name", "low", "avg", "high"].forEach((key, i) => {
+        const td = document.createElement("td");
+        td.textContent = key === "name" ? a.name : fmtUsd(a[key]);
+        if (key === "low") td.style.color = "#ff6f61";
+        if (key === "high") td.style.color = "#4ce081";
+        if (key === "avg") td.style.fontWeight = "700";
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    table.appendChild(tb);
+    consBox.appendChild(table);
+    wrap.appendChild(consBox);
+  }
+
+  if (o.scenarios?.length) {
+    render2030ScenarioRows(wrap, o.scenarios, currentPrice);
+  }
+
+  container.appendChild(wrap);
+}
+
+function render2030ScenarioRows(wrap, scenarios, currentPrice) {
+  const sub = document.createElement("div");
+  sub.className = "forecast-2030-wrap";
+  const title = document.createElement("p");
+  title.className = "forecast-methods-title";
+  title.textContent = "Detaljerade 2030-scenarier från analytiker";
+  sub.appendChild(title);
+  scenarios.forEach(sc => {
+    const p = document.createElement("p");
+    p.className = "forecast-2030-plain";
+    p.textContent = `${sc.plainLabel}: ${fmtUsdRound(sc.low)}–${fmtUsdRound(sc.high)} — ${sc.plainText}`;
+    sub.appendChild(p);
+  });
+  wrap.appendChild(sub);
+}
+
+function renderAllYearsOverview(container, currentPrice) {
+  const data = getYearOutlookData();
+  const wrap = document.createElement("div");
+  wrap.className = "forecast-years-overview";
+
+  const title = document.createElement("p");
+  title.className = "forecast-methods-title";
+  title.textContent = "Översikt: ETH-pris slutet av varje år";
+  wrap.appendChild(title);
+
+  const table = document.createElement("table");
+  table.className = "forecast-years-table";
+  const thead = document.createElement("thead");
+  const hr = document.createElement("tr");
+  ["År", "Konservativ", "Realistiskt mitt", "Bullish", "Källa"].forEach(t => {
+    const th = document.createElement("th");
+    th.textContent = t;
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
   table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
-  ANALYST_2030_OUTLOOK.scenarios.forEach(sc => {
+  FORECAST_YEARS.forEach(year => {
+    const o = data[year];
     const tr = document.createElement("tr");
-
-    const labelCell = document.createElement("td");
-    labelCell.className = "forecast-2030-label";
-    labelCell.dataset.label = "Scenario";
-    const strong = document.createElement("strong");
-    strong.textContent = sc.plainLabel;
-    strong.className = sc.cssClass;
-    labelCell.appendChild(strong);
-    const sub = document.createElement("span");
-    sub.className = "forecast-2030-sublabel";
-    sub.textContent = sc.growthHint;
-    labelCell.appendChild(document.createElement("br"));
-    labelCell.appendChild(sub);
-
-    const rangeCell = document.createElement("td");
-    rangeCell.className = sc.cssClass;
-    rangeCell.dataset.label = "Pris 2030";
-    rangeCell.textContent = `${fmtUsdRound(sc.low)} – ${fmtUsdRound(sc.high)}`;
+    const yearTd = document.createElement("td");
+    yearTd.textContent = String(year);
+    yearTd.style.fontWeight = "700";
+    const consTd = document.createElement("td");
+    consTd.className = "forecast-scenario-bear";
+    consTd.textContent = `${fmtUsdRound(o.conservative.low)}–${fmtUsdRound(o.conservative.high)}`;
+    const midTd = document.createElement("td");
+    midTd.className = "forecast-scenario-base";
+    midTd.textContent = fmtUsdRound(o.mid);
     if (currentPrice > 0) {
-      const multLow = (sc.low / currentPrice).toFixed(1);
-      const multHigh = (sc.high / currentPrice).toFixed(1);
       const mult = document.createElement("span");
       mult.className = "forecast-2030-mult";
-      mult.textContent = ` (${multLow}–${multHigh}× dagens pris)`;
-      rangeCell.appendChild(mult);
+      mult.textContent = ` (${(o.mid / currentPrice).toFixed(1)}×)`;
+      midTd.appendChild(mult);
     }
-
-    const srcCell = document.createElement("td");
-    srcCell.className = "forecast-2030-sources";
-    srcCell.dataset.label = "Källor";
-    srcCell.textContent = sc.sources;
-
-    const textCell = document.createElement("td");
-    textCell.className = "forecast-2030-plain";
-    textCell.dataset.label = "Vad det betyder";
-    textCell.textContent = sc.plainText;
-
-    tr.appendChild(labelCell);
-    tr.appendChild(rangeCell);
-    tr.appendChild(srcCell);
-    tr.appendChild(textCell);
+    const bullTd = document.createElement("td");
+    bullTd.className = "forecast-scenario-bull";
+    bullTd.textContent = `${fmtUsdRound(o.bullish.low)}–${fmtUsdRound(o.bullish.high)}`;
+    const srcTd = document.createElement("td");
+    srcTd.className = "forecast-2030-sources";
+    srcTd.textContent = o.source.length > 40 ? o.source.slice(0, 38) + "…" : o.source;
+    tr.appendChild(yearTd);
+    tr.appendChild(consTd);
+    tr.appendChild(midTd);
+    tr.appendChild(bullTd);
+    tr.appendChild(srcTd);
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
   wrap.appendChild(table);
-
-  const realistic = ANALYST_2030_OUTLOOK.scenarios.find(s => s.id === "moderate");
-  const summary = document.createElement("div");
-  summary.className = "forecast-2030-summary";
-  const sumStrong = document.createElement("strong");
-  sumStrong.textContent = "Sammanfattning: ";
-  summary.appendChild(sumStrong);
-  summary.appendChild(document.createTextNode("De flesta analytiker landar mellan "));
-  const sumRange = document.createElement("span");
-  sumRange.className = "forecast-scenario-base";
-  sumRange.textContent = `${fmtUsdRound(realistic.low)}–${fmtUsdRound(realistic.high)}`;
-  summary.appendChild(sumRange);
-  summary.appendChild(document.createTextNode(
-    " år 2030. Extrema scenarier ($40 000+) finns men är ovanliga. " +
-    "Spridningen visar hur osäkra långsiktiga kryptoprognoser är."
-  ));
-  wrap.appendChild(summary);
-
-  const note = document.createElement("p");
-  note.className = "forecast-scenario-note";
-  note.textContent =
-    "Källor: offentliga analytikerprognoser (Coinbase, CoinCodex, Binance, VanEck, Standard Chartered m.fl.). " +
-    "Uppdaterad " + ANALYST_2030_OUTLOOK.lastUpdated + ". INTE finansiell rådgivning.";
-  wrap.appendChild(note);
   container.appendChild(wrap);
 }
 
@@ -1918,23 +2094,14 @@ function forecastConsensus(daysAhead) {
   };
 }
 
-// Horizons: 1 week, 1 month, then every year out to 10 years.
-const FORECAST_HORIZONS = [7, 30, 365, 730, 1095, 1460, 1825, 2190, 2555, 2920, 3285, 3650];
+// Kort sikt: 1 vecka och 1 månad. Årsprognoser 2027–2035 beräknas separat.
+const FORECAST_HORIZONS = [7, 30];
 
 function calculateForecasts(prices, currentPrice, indicators) {
   const horizons = FORECAST_HORIZONS;
   const results = {};
 
   for (const daysAhead of horizons) {
-    // 3–10 år: scenario-ränta (björn/bas/tjur) sammansatt från live-priset — se SCENARIO_RATES.
-    // 1–2 år behåller modellblandning + analytikerkonsensus. Vecka/månad oförändrat.
-    if (daysAhead >= 1095) {
-      const sc = buildScenarioForecast(currentPrice, daysAhead);
-      if (sc) sc.consensus = forecastConsensus(daysAhead);
-      results[daysAhead] = sc;
-      continue;
-    }
-
     const weights = getForecastWeights(daysAhead);
     const methods = {};
 
@@ -2099,22 +2266,30 @@ function calculateForecasts(prices, currentPrice, indicators) {
 // Cache for tab switching without recalculation
 let lastForecasts = null;
 let lastCurrentPrice = null;
-let activeForecastHorizon = 7;
+let activeForecastKey = 7;
 
-function renderForecastCard(forecasts, currentPrice) {
-  lastForecasts = forecasts;
-  lastCurrentPrice = currentPrice;
-  renderForecastTab(activeForecastHorizon);
+function isYearForecastKey(key) {
+  return typeof key === "number" && key >= 2027 && key <= 2035;
 }
 
-function renderForecastTab(horizon) {
-  activeForecastHorizon = horizon;
+function getTabForecastKey(tab) {
+  if (tab.dataset.year) return parseInt(tab.dataset.year, 10);
+  return parseInt(tab.dataset.horizon, 10);
+}
+
+function renderForecastCard(forecasts, currentPrice) {
+  lastForecasts = { ...forecasts, ...calculateYearForecasts(currentPrice) };
+  lastCurrentPrice = currentPrice;
+  renderForecastTab(activeForecastKey);
+}
+
+function renderForecastTab(key) {
+  activeForecastKey = key;
   const container = els.forecastContent;
 
-  // Update active tab
   document.querySelectorAll(".forecast-tab").forEach(tab => {
-    const h = parseInt(tab.dataset.horizon, 10);
-    if (h === horizon) {
+    const tabKey = getTabForecastKey(tab);
+    if (tabKey === key) {
       tab.classList.add("forecast-tab-active");
     } else {
       tab.classList.remove("forecast-tab-active");
@@ -2130,7 +2305,7 @@ function renderForecastTab(horizon) {
     return;
   }
 
-  const fc = lastForecasts[horizon];
+  const fc = lastForecasts[key];
   container.textContent = "";
 
   if (!fc) {
@@ -2144,16 +2319,29 @@ function renderForecastTab(horizon) {
 
   const currentPrice = lastCurrentPrice;
 
-  // Target year label (helps orient the multi-year tabs, e.g. "Prognos för 2033")
-  const targetYear = new Date().getFullYear() + Math.round(horizon / 365);
-  if (horizon >= 365) {
+  if (fc.isYearOutlook) {
+    const yearLabel = document.createElement("div");
+    yearLabel.className = "forecast-target-year";
+    yearLabel.textContent = `Prognos slutet av ${fc.year}`;
+    container.appendChild(yearLabel);
+
+    if (currentPrice > 0) {
+      const todayNote = document.createElement("p");
+      todayNote.className = "forecast-2030-today";
+      todayNote.textContent =
+        `ETH idag: cirka ${fmtUsdRound(currentPrice)}. ` +
+        `Realistiskt mitt för ${fc.year}: ${fmtUsdRound(fc.price)} (${fmtPct(fc.changePct)} från idag).`;
+      container.appendChild(todayNote);
+    }
+  } else if (key >= 365) {
+    const targetYear = new Date().getFullYear() + Math.round(key / 365);
     const yearLabel = document.createElement("div");
     yearLabel.className = "forecast-target-year";
     yearLabel.textContent = `Prognos för ${targetYear}`;
     container.appendChild(yearLabel);
   }
 
-  // Price display: low | FORECAST | high
+  const o = fc.outlook;
   const pricesRow = document.createElement("div");
   pricesRow.className = "forecast-prices";
 
@@ -2161,7 +2349,9 @@ function renderForecastTab(horizon) {
   lowBound.className = "forecast-bound";
   const lowLabel = document.createElement("span");
   lowLabel.className = "forecast-bound-label";
-  lowLabel.textContent = fc.isAnalyst2030 ? "Konservativ ($2k–3,5k)" : fc.isScenario ? "Björn −10 %/år" : "Lägsta";
+  lowLabel.textContent = fc.isYearOutlook
+    ? `${o.conservative.label} (${fmtUsdRound(o.conservative.low)}–${fmtUsdRound(o.conservative.high)})`
+    : fc.isScenario ? "Björn −10 %/år" : "Lägsta";
   const lowVal = document.createElement("span");
   lowVal.className = "forecast-bound-low";
   lowVal.textContent = fmtUsd(fc.lower);
@@ -2176,7 +2366,9 @@ function renderForecastTab(horizon) {
   mainPrice.className = "forecast-price-main";
   const mainSublabel = document.createElement("span");
   mainSublabel.className = "forecast-price-sublabel";
-  mainSublabel.textContent = fc.isAnalyst2030 ? "Realistiskt mitt ($10k)" : fc.isScenario ? "Bas +15 %/år" : "Prognos";
+  mainSublabel.textContent = fc.isYearOutlook
+    ? `Realistiskt mitt (${fmtUsdRound(o.realistic.low)}–${fmtUsdRound(o.realistic.high)})`
+    : fc.isScenario ? "Bas +15 %/år" : "Prognos";
   const mainVal = document.createElement("span");
   mainVal.className = "forecast-price-value";
   mainVal.textContent = fmtUsd(fc.price);
@@ -2191,7 +2383,9 @@ function renderForecastTab(horizon) {
   highBound.className = "forecast-bound";
   const highLabel = document.createElement("span");
   highLabel.className = "forecast-bound-label";
-  highLabel.textContent = fc.isAnalyst2030 ? "Mycket bullish (upp till $40k)" : fc.isScenario ? "Tjur +35 %/år" : "Högsta";
+  highLabel.textContent = fc.isYearOutlook
+    ? `${o.bullish.label} (upp till ${fmtUsdRound(o.bullish.high)})`
+    : fc.isScenario ? "Tjur +35 %/år" : "Högsta";
   const highVal = document.createElement("span");
   highVal.className = "forecast-bound-high";
   highVal.textContent = fmtUsd(fc.upper);
@@ -2219,16 +2413,14 @@ function renderForecastTab(horizon) {
   changeRow.appendChild(changeLbl);
   container.appendChild(changeRow);
 
-  if (fc.isAnalyst2030) {
-    render2030AnalystOutlook(container, currentPrice);
+  if (fc.isYearOutlook) {
+    renderYearOutlookDetail(container, fc, currentPrice);
+    renderAllYearsOverview(container, currentPrice);
   } else if (fc.isScenario) {
     renderScenarioTable(container, currentPrice);
   }
 
-  // Confidence badge, method breakdown and confidence bar are statistical-model concepts —
-  // they only render on the model-based tabs (1 vecka / 1 månad). Scenario tabs are plain
-  // compounding examples with no statistical confidence to express.
-  if (!fc.isScenario) {
+  if (!fc.isScenario && !fc.isYearOutlook) {
   // Confidence badge
   const confRow = document.createElement("div");
   confRow.className = "forecast-confidence-row";
@@ -2300,136 +2492,25 @@ function renderForecastTab(horizon) {
   barContainer.appendChild(bar);
   container.appendChild(barContainer);
 
-  // Beyond 2 years there is no real analyst-consensus data — say so explicitly instead
-  // of silently omitting the table, so users don't mistake the absence for an error.
-  if (horizon > 730) {
-    const noConsensus = document.createElement("p");
-    noConsensus.className = "forecast-no-consensus";
-    noConsensus.textContent = "Ingen analytikerkonsensus finns publicerad så här långt fram — 1 och 2-årsflikarna " +
-      "vägs delvis mot externa analytikerestimat, vilket kan göra att siffran här skiljer sig från grannflikarna. " +
-      "Denna prognos bygger enbart på modellextrapolering (trend, utjämning, momentum och mean-reversion) " +
-      "och blir kraftigt mer osäker ju längre fram i tiden den pekar.";
-    container.appendChild(noConsensus);
-  }
+  } // end kort sikt (modellprognos) — consensus block borttaget, årsflikar använder calculateYearForecasts
 
-  // Consensus section (only for 365d and 730d)
-  if ((horizon === 365 || horizon === 730) && fc.methods.D && fc.methods.D.analysts) {
-    const consBox = document.createElement("div");
-    consBox.className = "forecast-consensus";
-    const consTitle = document.createElement("div");
-    consTitle.className = "forecast-consensus-title";
-    consTitle.textContent = `Analytikerkonsensusprognos ${fc.methods.D.year}`;
-    consBox.appendChild(consTitle);
-
-    const table = document.createElement("table");
-    table.className = "forecast-consensus-table";
-    const thead = document.createElement("thead");
-    const headRow = document.createElement("tr");
-    ["Analytiker", "Lägsta", "Snitt", "Högsta", "Position"].forEach(text => {
-      const th = document.createElement("th");
-      th.textContent = text;
-      headRow.appendChild(th);
-    });
-    thead.appendChild(headRow);
-    table.appendChild(thead);
-
-    const tbody = document.createElement("tbody");
-    const allLow = arrayMin(fc.methods.D.analysts.map(a => a.low));
-    const allHigh = arrayMax(fc.methods.D.analysts.map(a => a.high));
-    const range = allHigh - allLow;
-
-    fc.methods.D.analysts.forEach(analyst => {
-      const tr = document.createElement("tr");
-      const tdName = document.createElement("td");
-      tdName.textContent = analyst.name;
-      const tdLow = document.createElement("td");
-      tdLow.textContent = fmtUsd(analyst.low);
-      tdLow.style.color = "#ff6f61";
-      const tdAvg = document.createElement("td");
-      tdAvg.textContent = fmtUsd(analyst.avg);
-      tdAvg.style.fontWeight = "700";
-      const tdHigh = document.createElement("td");
-      tdHigh.textContent = fmtUsd(analyst.high);
-      tdHigh.style.color = "#4ce081";
-
-      // Position indicator
-      const tdPos = document.createElement("td");
-      const posBar = document.createElement("div");
-      posBar.className = "forecast-position-bar";
-      if (range > 0) {
-        const fillLeft = ((analyst.low - allLow) / range) * 100;
-        const fillWidth = ((analyst.high - analyst.low) / range) * 100;
-        const fill = document.createElement("div");
-        fill.className = "forecast-position-fill";
-        fill.style.left = `${fillLeft}%`;
-        fill.style.width = `${fillWidth}%`;
-        posBar.appendChild(fill);
-        const dot = document.createElement("div");
-        dot.className = "forecast-position-dot";
-        dot.style.left = `${((analyst.avg - allLow) / range) * 100}%`;
-        posBar.appendChild(dot);
-      }
-      tdPos.appendChild(posBar);
-
-      tr.appendChild(tdName);
-      tr.appendChild(tdLow);
-      tr.appendChild(tdAvg);
-      tr.appendChild(tdHigh);
-      tr.appendChild(tdPos);
-      tbody.appendChild(tr);
-    });
-
-    // Current price row
-    if (currentPrice > 0) {
-      const trCur = document.createElement("tr");
-      const tdCurName = document.createElement("td");
-      tdCurName.textContent = "Nuvarande pris";
-      tdCurName.style.color = "#6dd5ed";
-      tdCurName.style.fontWeight = "700";
-      const tdCurVal = document.createElement("td");
-      tdCurVal.colSpan = 4;
-      tdCurVal.textContent = fmtUsd(currentPrice);
-      tdCurVal.style.color = "#6dd5ed";
-      tdCurVal.style.fontWeight = "700";
-      trCur.appendChild(tdCurName);
-      trCur.appendChild(tdCurVal);
-      tbody.appendChild(trCur);
-    }
-
-    table.appendChild(tbody);
-    consBox.appendChild(table);
-    const consDate = document.createElement("div");
-    consDate.style.cssText = "font-size:0.72rem;color:#8b91ab;margin-top:6px;text-align:right";
-    consDate.textContent = `Senast uppdaterad: ${ANALYST_FORECASTS.lastUpdated}`;
-    consBox.appendChild(consDate);
-    container.appendChild(consBox);
-  }
-
-  } // end !fc.isScenario
-
-  // Disclaimer
   const disc = document.createElement("p");
   disc.className = "forecast-disclaimer";
-  disc.textContent = fc.isAnalyst2030
-    ? "Analytikerprognoser är spekulativa och spridda — ingen vet var ETH står 2030. " +
-      "Intervallen speglar vad banker och analysfirmor publicerat, inte vår egen modell. " +
-      "Detta är INTE finansiell rådgivning. Gör alltid din egen research (DYOR)."
+  disc.textContent = fc.isYearOutlook
+    ? "Årsprognoser bygger på analytikerintervall, interpolation och extrapolering — ingen vet var ETH står. " +
+      "2027–2028: analytikerkonsensus. 2030: banker och analysfirmor. 2029 och 2031–2035: beräknade mellanliggande steg. " +
+      "INTE finansiell rådgivning. DYOR."
     : fc.isScenario
     ? "Scenarierna ovan är ren sammansatt ränta från dagens pris — beräkningsexempel, inte prognoser. " +
-      "Ingen modell kan tillförlitligt förutsäga kryptopriser flera år fram i tiden. " +
       "Detta är INTE finansiell rådgivning. Gör alltid din egen research (DYOR)."
-    : horizon > 730
-    ? "Prognoser för flera år framåt bygger enbart på matematisk extrapolering av historiska prisrörelser, " +
-      "utan någon fundamental analys (nätverksbruk, staking, adoption) — och är EXTREMT osäkra. Ingen modell " +
-      "kan tillförlitligt förutsäga kryptopriser flera år fram i tiden. Detta är INTE finansiell rådgivning. " +
-      "Gör alltid din egen research (DYOR) och investera bara pengar du har råd att förlora."
-    : "Prognoser baseras på historiska prisdata, tekniska indikatorer och analytikerestimat. " +
-      "Kryptovalutor är extremt volatila och dessa prognoser är INTE finansiell rådgivning. " +
-      "Gör alltid din egen research (DYOR) och investera bara pengar du har råd att förlora.";
+    : "Prognoser baseras på historiska prisdata och tekniska indikatorer (1 vecka / 1 månad). " +
+      "Kryptovalutor är extremt volatila. INTE finansiell rådgivning. DYOR.";
   container.appendChild(disc);
 
-  // Update chart with forecast data
-  updateChartWithForecast(horizon, fc, currentPrice);
+  const chartHorizon = fc.isYearOutlook
+    ? Math.max(1, Math.ceil((new Date(fc.year, 11, 31) - new Date()) / 86400000))
+    : key;
+  updateChartWithForecast(chartHorizon, fc, currentPrice);
 }
 
 // Store original chart data for reset on tab switch
@@ -2595,8 +2676,7 @@ function updateChartWithForecast(horizon, fc, currentPrice) {
 // Tab click handler
 document.querySelectorAll(".forecast-tab").forEach(tab => {
   tab.addEventListener("click", () => {
-    const horizon = parseInt(tab.dataset.horizon, 10);
-    renderForecastTab(horizon);
+    renderForecastTab(getTabForecastKey(tab));
   });
 });
 
