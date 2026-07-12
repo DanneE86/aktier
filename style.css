@@ -36,6 +36,14 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+#divergence-card {
+  scroll-margin-top: 16px;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -93,6 +101,36 @@ header {
   line-height: 1.35;
 }
 
+.header-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.header-divergence-pill {
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.header-divergence-pill:hover {
+  border-color: var(--color-accent-alt);
+  transform: translateY(-1px);
+}
+
+.header-divergence-pill.divergence-pulse {
+  border-color: var(--color-warning-border);
+  box-shadow: 0 0 0 1px var(--color-warning-border), 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: divergence-glow 2s ease-in-out infinite;
+}
+
+@keyframes divergence-glow {
+  0%, 100% { box-shadow: 0 0 0 1px var(--color-warning-border), 0 4px 12px rgba(0, 0, 0, 0.2); }
+  50% { box-shadow: 0 0 0 3px var(--color-warning-border), 0 4px 16px rgba(0, 0, 0, 0.3); }
+}
+
 @media (max-width: 640px) {
   .site-header {
     flex-direction: column;
@@ -102,6 +140,10 @@ header {
     align-self: stretch;
     max-width: none;
     text-align: left;
+  }
+
+  .header-pills {
+    width: 100%;
   }
 }
 
@@ -232,6 +274,39 @@ select:focus-visible {
   color: #ff6f61;
   border: 1px solid #e74c3c;
 }
+
+.signal-none {
+  background: rgba(139, 145, 171, 0.12);
+  color: #8b91ab;
+  border: 1px solid #2b3252;
+}
+
+.divergence-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.divergence-card.divergence-active {
+  border-color: var(--color-warning-border);
+  box-shadow: 0 0 0 1px var(--color-warning-border), 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.divergence-intro {
+  color: var(--color-text-faint);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.divergence-action {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-bottom: 10px;
+}
+
+.divergence-action.action-buy { color: var(--color-success); }
+.divergence-action.action-sell { color: var(--color-error); }
+.divergence-action.action-hold { color: var(--color-text-muted); }
 
 .signal-reasons {
   margin: 0 0 16px;

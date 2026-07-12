@@ -822,6 +822,149 @@ function renderBreakoutAnalysis(ba, currentPrice, ma50val, ma200val) {
   }
 }
 
+// ─── Divergens (RSI/MACD mot pris) ────────────────────────────────────────
+// Den starkaste klassiska reversal-signalen: priset gör en ny topp/botten
+// men indikatorn hänger inte med → varning för vändning (bäst för vecko-/swingtrading).
+
+// Rullande EMA-serie (samma metod som ema(), men returnerar ett värde per punkt)
+function emaSeries(values, period) {
+  const result = new Array(values.length).fill(null);
+  if (values.length < period) return result;
+  let val = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  result[period - 1] = val;
+  const k = 2 / (period + 1);
+  for (let i = period; i < values.length; i++) {
+    val = values[i] * k + val * (1 - k);
+    result[i] = val;
+  }
+  return result;
+}
+
+// Rullande RSI-serie (samma metod som rsi(), men ett värde per punkt)
+function rsiSeries(values, period = 14) {
+  const result = new Array(values.length).fill(null);
+  for (let i = period; i < values.length; i++) {
+    const win = values.slice(i - period, i + 1);
+    let gains = 0, losses = 0;
+    for (let j = 1; j < win.length; j++) {
+      const d = win[j] - win[j - 1];
+      if (d >= 0) gains += d; else losses += Math.abs(d);
+    }
+    const avgGain = gains / period, avgLoss = losses / period;
+    result[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+  }
+  return result;
+}
+
+// Jämför de två senaste pristopparna/bottnarna (via findLocalExtremes) mot en indikatorserie.
+function findDivergence(indicatorSeries, extremes, indicatorLabel) {
+  let bearish = null;
+  if (extremes.maxima.length >= 2) {
+    const [a, b] = extremes.maxima.slice(-2);
+    const indA = indicatorSeries[a.idx], indB = indicatorSeries[b.idx];
+    if (b.price > a.price && indA != null && indB != null && indB < indA) {
+      bearish = { label: indicatorLabel, fromIdx: a.idx, toIdx: b.idx, fromPrice: a.price, toPrice: b.price, fromInd: indA, toInd: indB };
+    }
+  }
+
+  let bullish = null;
+  if (extremes.minima.length >= 2) {
+    const [a, b] = extremes.minima.slice(-2);
+    const indA = indicatorSeries[a.idx], indB = indicatorSeries[b.idx];
+    if (b.price < a.price && indA != null && indB != null && indB > indA) {
+      bullish = { label: indicatorLabel, fromIdx: a.idx, toIdx: b.idx, fromPrice: a.price, toPrice: b.price, fromInd: indA, toInd: indB };
+    }
+  }
+
+  return { bearish, bullish };
+}
+
+// Slår ihop RSI- och MACD-divergens till en samlad signal. Tittar bara på de senaste
+// ~90 dagarnas svängningar (relevant tidsram för vecko-/swingtrading, inte day trading).
+function computeDivergenceSignal(prices, labels, lookback = 90) {
+  if (!prices || prices.length < 40) {
+    return { type: "none", confidence: "low", messages: ["Otillräcklig prishistorik för divergensanalys."] };
+  }
+
+  const start = Math.max(0, prices.length - lookback);
+  const priceSlice = prices.slice(start);
+  const labelSlice = (labels || []).slice(start);
+
+  const rsiSer    = rsiSeries(priceSlice, 14);
+  const ema12Ser  = emaSeries(priceSlice, 12);
+  const ema26Ser  = emaSeries(priceSlice, 26);
+  const macdSer   = priceSlice.map((_, i) => (ema12Ser[i] != null && ema26Ser[i] != null) ? ema12Ser[i] - ema26Ser[i] : null);
+
+  const extremes = findLocalExtremes(priceSlice, 5);
+  const rsiDiv  = findDivergence(rsiSer, extremes, "RSI");
+  const macdDiv = findDivergence(macdSer, extremes, "MACD");
+
+  const fmtDate = (idx) => labelSlice[idx] || `dag ${idx}`;
+  const fmtInd  = (label, v) => label === "MACD" ? fmtUsd(v) : v.toFixed(1);
+
+  const bearishHits = [rsiDiv.bearish, macdDiv.bearish].filter(Boolean);
+  const bullishHits = [rsiDiv.bullish, macdDiv.bullish].filter(Boolean);
+
+  if (bearishHits.length > 0) {
+    const messages = bearishHits.map(h =>
+      `▼ ${h.label}-divergens: priset steg (${fmtUsd(h.fromPrice)} → ${fmtUsd(h.toPrice)}, ${fmtDate(h.fromIdx)} → ${fmtDate(h.toIdx)}) men ${h.label} föll (${fmtInd(h.label, h.fromInd)} → ${fmtInd(h.label, h.toInd)}) → varning för topp.`
+    );
+    return { type: "bearish", confidence: bearishHits.length === 2 ? "high" : "medium", messages };
+  }
+
+  if (bullishHits.length > 0) {
+    const messages = bullishHits.map(h =>
+      `▲ ${h.label}-divergens: priset föll (${fmtUsd(h.fromPrice)} → ${fmtUsd(h.toPrice)}, ${fmtDate(h.fromIdx)} → ${fmtDate(h.toIdx)}) men ${h.label} steg (${fmtInd(h.label, h.fromInd)} → ${fmtInd(h.label, h.toInd)}) → varning för botten.`
+    );
+    return { type: "bullish", confidence: bullishHits.length === 2 ? "high" : "medium", messages };
+  }
+
+  return { type: "none", confidence: "low", messages: ["Ingen RSI/MACD-divergens upptäckt i de senaste 90 dagarnas svängningar just nu."] };
+}
+
+function renderDivergenceCard(div) {
+  const action     = document.getElementById("divergence-action");
+  const badge      = document.getElementById("divergence-badge");
+  const detail     = document.getElementById("divergence-detail");
+  const card       = document.getElementById("divergence-card");
+  const headerPill = document.getElementById("header-divergence-pill");
+  const headerText = document.getElementById("header-divergence-text");
+  if (!badge || !detail) return;
+
+  detail.textContent = "";
+  div.messages.forEach(msg => {
+    const li = document.createElement("li");
+    li.textContent = msg;
+    li.className = div.type === "bearish" ? "reason-bear" : div.type === "bullish" ? "reason-bull" : "reason-neutral";
+    detail.appendChild(li);
+  });
+
+  const confLabel = div.confidence === "high" ? "Hög" : "Medel";
+
+  if (div.type === "bearish") {
+    if (action) { action.textContent = "▼ SÄLJ"; action.className = "divergence-action action-sell"; }
+    badge.textContent = `Bearish divergens – möjlig topp (${confLabel} konfidensgrad)`;
+    badge.className = "signal-badge signal-sell";
+    if (headerText) { headerText.textContent = "▼ SÄLJ (möjlig topp)"; headerText.className = "header-vol-text down"; }
+    if (card) card.classList.add("divergence-active");
+    if (headerPill) headerPill.classList.add("divergence-pulse");
+  } else if (div.type === "bullish") {
+    if (action) { action.textContent = "▲ KÖP"; action.className = "divergence-action action-buy"; }
+    badge.textContent = `Bullish divergens – möjlig botten (${confLabel} konfidensgrad)`;
+    badge.className = "signal-badge signal-buy";
+    if (headerText) { headerText.textContent = "▲ KÖP (möjlig botten)"; headerText.className = "header-vol-text up"; }
+    if (card) card.classList.add("divergence-active");
+    if (headerPill) headerPill.classList.add("divergence-pulse");
+  } else {
+    if (action) { action.textContent = "● BEHÅLL / AVVAKTA"; action.className = "divergence-action action-hold"; }
+    badge.textContent = "Ingen divergens just nu";
+    badge.className = "signal-badge signal-none";
+    if (headerText) { headerText.textContent = "● Behåll"; headerText.className = "header-vol-text vol-unknown"; }
+    if (card) card.classList.remove("divergence-active");
+    if (headerPill) headerPill.classList.remove("divergence-pulse");
+  }
+}
+
 // ─── Sentiment ─────────────────────────────────────────────────────────────
 
 function classifySentiment(value) {
@@ -846,7 +989,7 @@ function setSignal(type, label, reasons) {
   });
 }
 
-function renderSourcesCard(latestRsi, sentimentValue, latestEma12, latestEma26, bb, currentPrice, binancePrice, volumes) {
+function renderSourcesCard(latestRsi, sentimentValue, latestEma12, latestEma26, bb, currentPrice, binancePrice, volumes, divergence) {
   // ── Källstatus ──────────────────────────────────────────────────────────
   const cgSignals = [
     latestRsi ? (latestRsi < 35 ? 1 : latestRsi > 65 ? -1 : 0) : 0,
@@ -928,6 +1071,16 @@ function renderSourcesCard(latestRsi, sentimentValue, latestEma12, latestEma26, 
         ? (volCls.level === "low" ? "● Låg – få handlar" : volCls.level === "normal" ? "● Normal dag" : volCls.level === "elevated" ? "▲ Lite mer än vanligt" : volCls.level === "high" ? "▲▲ Hög – trovärdig rörelse" : "▲▲ Extremt mycket handel")
         : "–",
     },
+    {
+      label: "RSI/MACD-divergens",
+      value: divergence
+        ? (divergence.type === "none" ? "Ingen" : divergence.type === "bearish" ? "Bearish (möjlig topp)" : "Bullish (möjlig botten)")
+        : "–",
+      score: divergence ? (divergence.type === "bearish" ? -2 : divergence.type === "bullish" ? 2 : 0) : 0,
+      signalText: divergence
+        ? (divergence.type === "bearish" ? "▼▼ Varnar för topp" : divergence.type === "bullish" ? "▲▲ Varnar för botten" : "● Ingen divergens")
+        : "–",
+    },
   ];
 
   items.forEach(item => {
@@ -950,10 +1103,10 @@ function renderSourcesCard(latestRsi, sentimentValue, latestEma12, latestEma26, 
   });
 }
 
-function buildSignal(latestRsi, change24h, sentimentValue, latestEma12, latestEma26, bb, currentPrice, volumes) {
+function buildSignal(latestRsi, change24h, sentimentValue, latestEma12, latestEma26, bb, currentPrice, volumes, divergence) {
   const reasons = [];
   let score = 0;
-  const maxScore = 10;
+  const maxScore = 12;
 
   // 1) MACD-histogram (ersätter dubblerad SMA+EMA) — graderat efter avstånd
   if (latestEma12 !== null && latestEma26 !== null) {
@@ -1068,6 +1221,18 @@ function buildSignal(latestRsi, change24h, sentimentValue, latestEma12, latestEm
         reasons.push({ score: 0, text: `● Normal handel (${Math.round(volRatio * 100)}% av normalt).` });
       }
     }
+  }
+
+  // 6) RSI/MACD-divergens — starkaste reversal-signalen, vägs tungt
+  if (divergence && divergence.type !== "none") {
+    const divScore = divergence.type === "bullish" ? 2 : -2;
+    score += divScore;
+    reasons.push({
+      score: divScore,
+      text: divergence.type === "bullish"
+        ? "▲▲ RSI/MACD-divergens → priset gör lägre bottnar men indikatorn gör det inte → varning för vändning uppåt."
+        : "▼▼ RSI/MACD-divergens → priset gör högre toppar men indikatorn gör det inte → varning för vändning nedåt.",
+    });
   }
 
   if (typeof change24h === "number") {
@@ -3587,11 +3752,15 @@ async function loadData() {
       }
     }
 
-    // 4) Källkort + signalscorecard
-    renderSourcesCard(latestRsi, sentimentValue, latestEma12, latestEma26, bb, currentPrice, lastBinancePrice, volumes);
+    // 3c) RSI/MACD-divergens (topp/botten-varning, senaste 90 dagarna)
+    const divergenceResult = computeDivergenceSignal(prices, labels);
+    renderDivergenceCard(divergenceResult);
 
-    // 5) Kombinerad köp/sälj-signal (5 faktorer, graderad)
-    buildSignal(latestRsi, change24h, sentimentValue, latestEma12, latestEma26, bb, currentPrice, volumes);
+    // 4) Källkort + signalscorecard
+    renderSourcesCard(latestRsi, sentimentValue, latestEma12, latestEma26, bb, currentPrice, lastBinancePrice, volumes, divergenceResult);
+
+    // 5) Kombinerad köp/sälj-signal (6 faktorer, graderad)
+    buildSignal(latestRsi, change24h, sentimentValue, latestEma12, latestEma26, bb, currentPrice, volumes, divergenceResult);
 
     // 6) Utbrottsanalys (ba redan beräknad ovan)
     if (ba) renderBreakoutAnalysis(ba, currentPrice, ma50val, ma200val);

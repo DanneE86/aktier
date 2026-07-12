@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0f1117">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Aktier">
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=13">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 </head>
@@ -32,10 +32,16 @@
         <h1>Ξ Ethereum Tracker</h1>
         <p class="subtitle">Live-pris, trend och enkla köp/sälj-signaler baserade på teknisk analys</p>
       </div>
-      <aside class="header-vol-pill" id="header-vol-pill" aria-label="Handelsvolym just nu">
-        <span class="header-vol-label">Tillräckligt mycket handel?</span>
-        <strong id="header-vol-text" class="header-vol-text vol-unknown">Laddar…</strong>
-      </aside>
+      <div class="header-pills">
+        <aside class="header-vol-pill" id="header-vol-pill" aria-label="Handelsvolym just nu">
+          <span class="header-vol-label">Tillräckligt mycket handel?</span>
+          <strong id="header-vol-text" class="header-vol-text vol-unknown">Laddar…</strong>
+        </aside>
+        <a class="header-vol-pill header-divergence-pill" id="header-divergence-pill" href="#divergence-card" aria-label="Divergens-signal (topp/botten-varning) – hoppa till detaljer">
+          <span class="header-vol-label">⚡ Topp/botten-signal</span>
+          <strong id="header-divergence-text" class="header-vol-text vol-unknown">Laddar…</strong>
+        </a>
+      </div>
     </header>
 
     <section id="price-card" class="card">
@@ -79,6 +85,22 @@
         <p id="vol-quick-compare" class="vol-quick-compare">Räknar ut om handeln är låg, normal eller hög…</p>
         <p id="vol-quick-detail" class="vol-quick-detail">Laddar…</p>
       </div>
+    </section>
+
+    <section id="divergence-card" class="card divergence-card">
+      <h2>⚡ Divergens-varning <span class="ta-badge">Topp/botten-signal</span></h2>
+      <p class="divergence-intro">
+        Jämför prisets toppar/bottnar mot RSI och MACD de senaste 90 dagarna. När priset gör en ny
+        topp/botten men indikatorn inte hänger med kallas det divergens — enligt tradare den starkaste
+        signalen för en vändning (bäst för vecko-/swingtrading, inte day trading).
+      </p>
+      <div id="divergence-action" class="divergence-action">Laddar…</div>
+      <div id="divergence-badge" class="signal-badge signal-loading">Laddar analys…</div>
+      <ul id="divergence-detail" class="signal-reasons"></ul>
+      <p class="disclaimer">
+        ⚠️ Divergens är ett varningstecken, inte en garanti för vändning. Bekräfta alltid med volym
+        och gärna fler tidsramar innan du agerar.
+      </p>
     </section>
 
     <section id="market-card" class="card">
@@ -620,6 +642,6 @@
     </footer>
   </div>
 
-  <script src="script.js?v=11"></script>
+  <script src="script.js?v=13"></script>
 </body>
 </html>
