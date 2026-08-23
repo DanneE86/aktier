@@ -2134,7 +2134,7 @@ async function loadAndRenderDetails(stock) {
     if (rsi != null && macd != null && sma20 != null && sma50 != null) {
       const currentPrice = priceCache[ticker] ? parseFloat(priceCache[ticker].close) : sma20;
       const taResult = generateTASignal(rsi, macd, sma20, sma50, currentPrice);
-      renderTAScorecard(taResult);
+      renderTAScorecard(taResult, LONG_TERM_PICKS.includes(stock));
     }
 
     // Stod/motstand
@@ -2193,9 +2193,16 @@ async function loadAndRenderDetails(stock) {
 
 // ── TA Scorecard rendering ───────────────────────────────────────
 
-function renderTAScorecard(taResult) {
+function renderTAScorecard(taResult, isLongTerm) {
   const container = document.getElementById("detail-ta-scorecard");
   clearChildren(container);
+
+  if (isLongTerm) {
+    const note = el("p", "sc-buffett-note",
+      "Långsiktigt innehav (3+ år): kortsiktiga TA-signaler nedan är ingen anledning att sälja. " +
+      "Buffett-principen \"ignorera kortsiktigt brus\" väger tyngre än RSI/MACD för denna typ av aktie.");
+    container.appendChild(note);
+  }
 
   taResult.signals.forEach((sig) => {
     const item = el("div", "sc-item");
@@ -2215,12 +2222,13 @@ function renderTAScorecard(taResult) {
   // Sammanfattad signal
   const summaryItem = el("div", "sc-item");
   summaryItem.style.borderWidth = "2px";
-  summaryItem.appendChild(el("span", "sc-label", "SAMMANVAGD"));
+  summaryItem.appendChild(el("span", "sc-label", isLongTerm ? "KORTSIKTIG TEKNISK BILD" : "SAMMANVAGD"));
   summaryItem.appendChild(el("span", "sc-value",
     "Bull: " + taResult.bullCount + " / Bear: " + taResult.bearCount));
   const overallClass = taResult.overallSignal.indexOf("KOP") !== -1 ? "sc-bull" :
                        taResult.overallSignal.indexOf("SALJ") !== -1 ? "sc-bear" : "sc-neut";
-  summaryItem.appendChild(el("span", "sc-signal " + overallClass, taResult.overallSignal));
+  const overallLabel = isLongTerm ? taResult.overallSignal + " (påverkar ej hold-status)" : taResult.overallSignal;
+  summaryItem.appendChild(el("span", "sc-signal " + overallClass, overallLabel));
   container.appendChild(summaryItem);
 }
 

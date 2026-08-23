@@ -159,6 +159,40 @@ app.get("/api/rockets/prices", async (req, res) => {
   res.json({ date, prices });
 });
 
+// ── AVANZA PRICE PROXY (Valour ETH Zero SEK, orderbook 1208273) ──
+const AVANZA_ORDERBOOK_ID = "1208273";
+let avanzaPriceCache = null;
+
+app.get("/api/avanza/price", async (_req, res) => {
+  if (avanzaPriceCache && Date.now() - avanzaPriceCache.ts < 60_000) {
+    return res.json(avanzaPriceCache.data);
+  }
+  try {
+    const r = await fetch(
+      `https://www.avanza.se/_api/price-chart/stock/${AVANZA_ORDERBOOK_ID}?timePeriod=today`,
+      { headers: { "User-Agent": "Mozilla/5.0" } }
+    );
+    if (!r.ok) {
+      if (avanzaPriceCache) return res.json(avanzaPriceCache.data);
+      return res.status(r.status).json({ error: `Avanza ${r.status}` });
+    }
+    const data = await r.json();
+    const ohlc = data.ohlc;
+    if (!ohlc?.length) {
+      if (avanzaPriceCache) return res.json(avanzaPriceCache.data);
+      return res.status(502).json({ error: "Ingen kursdata från Avanza" });
+    }
+    const last = ohlc[ohlc.length - 1];
+    const payload = { price: last.close, timestamp: last.timestamp, orderbookId: AVANZA_ORDERBOOK_ID };
+    avanzaPriceCache = { data: payload, ts: Date.now() };
+    res.json(payload);
+  } catch (e) {
+    console.error("[Avanza proxy]", e.message);
+    if (avanzaPriceCache) return res.json(avanzaPriceCache.data);
+    res.status(502).json({ error: "Avanza unreachable" });
+  }
+});
+
 // ── COINGECKO PROXY (avoids CORS + rate limiting via cache) ─────
 const cgCache = new Map();
 const CG_CACHE_TTL = 300_000;
@@ -198,6 +232,54 @@ app.get("/api/coingecko/*", async (req, res) => {
     console.error("[CoinGecko proxy]", e.message);
     if (cached) return res.json(cached.data);
     res.status(502).json({ error: "CoinGecko unreachable" });
+  }
+});
+
+// ── YAHOO FINANCE PROXY (chart/history, ingen API-nyckel krävs) ──
+// Yahoo har inget officiellt API -- de inofficiella endpointsen blockerar
+// anrop utan browser-liknande User-Agent, och kan inte anropas direkt från
+// frontend p.g.a. CORS. Proxas därför via servern, precis som Avanza/CoinGecko.
+const yahooCache = new Map();
+const YAHOO_CACHE_TTL = 300_000;
+const ALLOWED_YAHOO_SYMBOL = /^[A-Z][A-Z0-9.\-]{0,9}$/;
+const ALLOWED_YAHOO_RANGES = ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y"];
+const ALLOWED_YAHOO_INTERVALS = ["1d", "1wk", "1mo"];
+
+app.get("/api/yahoo/chart", async (req, res) => {
+  const symbol = String(req.query.symbol || "").toUpperCase();
+  const range = ALLOWED_YAHOO_RANGES.includes(req.query.range) ? req.query.range : "1y";
+  const interval = ALLOWED_YAHOO_INTERVALS.includes(req.query.interval) ? req.query.interval : "1d";
+
+  if (!ALLOWED_YAHOO_SYMBOL.test(symbol)) {
+    return res.status(400).json({ error: "Ogiltig symbol" });
+  }
+
+  const cacheKey = `${symbol}:${range}:${interval}`;
+  const cached = yahooCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < YAHOO_CACHE_TTL) {
+    return res.json(cached.data);
+  }
+
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${range}&interval=${interval}`;
+    const r = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36" },
+    });
+    if (!r.ok) {
+      if (cached) return res.json(cached.data);
+      return res.status(r.status).json({ error: `Yahoo Finance ${r.status}` });
+    }
+    const data = await r.json();
+    if (data?.chart?.error) {
+      if (cached) return res.json(cached.data);
+      return res.status(502).json({ error: data.chart.error.description || "Yahoo Finance-fel" });
+    }
+    yahooCache.set(cacheKey, { data, ts: Date.now() });
+    res.json(data);
+  } catch (e) {
+    console.error("[Yahoo proxy]", e.message);
+    if (cached) return res.json(cached.data);
+    res.status(502).json({ error: "Yahoo Finance unreachable" });
   }
 });
 

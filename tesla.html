@@ -1,0 +1,451 @@
+
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tesla (TSLA) – Pris &amp; Köp/Sälj-signaler</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#0f1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Aktier">
+  <link rel="stylesheet" href="style.css?v=15">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Navigation -->
+    <nav class="nav-bar" role="navigation" aria-label="Huvudnavigation">
+      <a href="index.html" class="nav-link">
+        <span class="nav-icon" aria-hidden="true">&Xi;</span> ETH Tracker
+      </a>
+      <a href="stocks.html" class="nav-link">
+        <span class="nav-icon" aria-hidden="true">$</span> Aktieanalys
+      </a>
+      <a href="tesla.html" class="nav-link nav-link-active" aria-current="page">
+        <span class="nav-icon" aria-hidden="true">T</span> Tesla
+      </a>
+    </nav>
+
+    <header class="site-header">
+      <div class="site-header-main">
+        <h1>🚗 Tesla Tracker</h1>
+        <p class="subtitle">Live-kurs, trend och enkla köp/sälj-signaler för TSLA baserade på teknisk analys</p>
+      </div>
+      <div class="header-pills">
+        <aside class="header-vol-pill" id="header-vol-pill" aria-label="Handelsvolym just nu">
+          <span class="header-vol-label">Tillräckligt mycket handel?</span>
+          <strong id="header-vol-text" class="header-vol-text vol-unknown">Laddar…</strong>
+        </aside>
+        <a class="header-vol-pill header-divergence-pill" id="header-divergence-pill" href="#divergence-card" aria-label="Divergens-signal (topp/botten-varning) – hoppa till detaljer">
+          <span class="header-vol-label">⚡ Topp/botten-signal</span>
+          <strong id="header-divergence-text" class="header-vol-text vol-unknown">Laddar…</strong>
+        </a>
+      </div>
+    </header>
+
+    <section id="price-card" class="card">
+      <div class="price-main">
+        <span class="label">Pris (USD) · Yahoo Finance</span>
+        <span id="price-usd" class="price">–</span>
+      </div>
+      <div class="price-secondary">
+        <div>
+          <span class="label">Förändring (dag)</span>
+          <span id="change-24h" class="price-small">–</span>
+        </div>
+        <div>
+          <span class="label">Föregående stängning</span>
+          <span id="prev-close" class="price-small">–</span>
+        </div>
+        <div>
+          <span class="label">52-veckors intervall</span>
+          <span id="week52-range" class="price-small">–</span>
+        </div>
+        <div>
+          <span class="label">Senast uppdaterad</span>
+          <span id="last-updated" class="price-small">–</span>
+        </div>
+      </div>
+      <p class="auto-refresh">
+        🔄 Auto-uppdaterar var 5:e minut · nästa uppdatering om <span id="countdown">300</span> s
+      </p>
+      <p id="price-source-note" class="price-source-note" style="display:none"></p>
+
+      <div class="vol-quick-box" id="vol-quick-box">
+        <div class="vol-quick-header">
+          <div>
+            <span class="vol-quick-title">Hur mycket handlas TSLA?</span>
+            <span class="vol-quick-subtitle">Antal aktier som bytt ägare senaste handelsdagen</span>
+          </div>
+          <span id="vol-quick-badge" class="vol-badge vol-unknown">–</span>
+        </div>
+        <div id="vol-quick-value" class="vol-quick-value">–</div>
+        <p class="vol-quick-unit">handlade aktier senaste dagen</p>
+        <p id="vol-quick-compare" class="vol-quick-compare">Räknar ut om handeln är låg, normal eller hög…</p>
+        <p id="vol-quick-detail" class="vol-quick-detail">Laddar…</p>
+      </div>
+    </section>
+
+    <section id="divergence-card" class="card divergence-card">
+      <h2>⚡ Divergens-varning <span class="ta-badge">Topp/botten-signal</span></h2>
+      <p class="divergence-intro">
+        Jämför prisets toppar/bottnar mot RSI och MACD de senaste 90 handelsdagarna. När priset gör en ny
+        topp/botten men indikatorn inte hänger med kallas det divergens — enligt tradare den starkaste
+        signalen för en vändning (bäst för vecko-/swingtrading, inte day trading).
+      </p>
+      <div id="divergence-action" class="divergence-action">Laddar…</div>
+      <div id="divergence-badge" class="signal-badge signal-loading">Laddar analys…</div>
+      <ul id="divergence-detail" class="signal-reasons"></ul>
+      <p class="disclaimer">
+        ⚠️ Divergens är ett varningstecken, inte en garanti för vändning. Bekräfta alltid med volym
+        och gärna fler tidsramar innan du agerar.
+      </p>
+    </section>
+
+    <section id="market-card" class="card">
+      <h2>Marknadsinformation</h2>
+      <div class="indicators">
+        <div class="indicator">
+          <span class="label">Volym (senaste dagen)</span>
+          <span id="volume-24h" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Snittvolym (20 dagar)</span>
+          <span id="avg-volume" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">52v High</span>
+          <span id="week52-high" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">52v Low</span>
+          <span id="week52-low" class="value">–</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="volume-card" class="card">
+      <h2>Volym – förklarat enkelt</h2>
+      <p class="vol-card-intro">Volym = hur många TSLA-aktier som köpts och sålts. Ju mer handel, desto mer meningsfull är en prisrörelse.</p>
+      <div class="vol-header">
+        <span id="vol-level-badge" class="vol-badge vol-unknown">–</span>
+        <span id="vol-rvol-summary" class="vol-rvol-summary">–</span>
+      </div>
+      <div class="indicators">
+        <div class="indicator">
+          <span class="label">Idag vs snitt (20 dagar)</span>
+          <span id="vol-rvol-value" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Senaste veckan</span>
+          <span id="vol-7d-trend" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Vad gör priset?</span>
+          <span id="vol-direction" class="value">–</span>
+        </div>
+      </div>
+      <p id="vol-insight" class="vol-insight">Laddar…</p>
+      <p id="vol-tendency" class="vol-tendency"></p>
+      <p class="vol-help">Enklare sagt: handlas det mycket idag jämfört med en vanlig dag? Mycket handel + stigande pris = starkare köpsignal. Lite handel + stigande pris = kan vara en bluff.</p>
+    </section>
+
+    <section id="sentiment-card" class="card">
+      <h2>Sentiment (teknisk proxy)</h2>
+      <div class="sentiment-row">
+        <div id="sentiment-gauge" class="sentiment-gauge sentiment-loading">–</div>
+        <div class="sentiment-text">
+          <span id="sentiment-label" class="sentiment-label">Laddar…</span>
+          <p id="sentiment-desc" class="sentiment-desc">
+            Beräknas lokalt utifrån RSI, Bollinger Band-position och kort volatilitet i TSLA:s egen
+            prishistorik (0–100, contrarian-tolkning). <strong>Detta är INTE hämtat från en extern
+            Fear &amp; Greed-indexkälla</strong> — en sådan finns inte fritt tillgänglig för enskilda aktier,
+            så siffran är en teknisk proxy, inte ett riktigt sentimentindex.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="sources-card">
+      <h2>Datakällor &amp; signalbidrag</h2>
+      <table class="sources-table">
+        <thead>
+          <tr>
+            <th>Källa</th>
+            <th>Mäter</th>
+            <th>Indikator</th>
+            <th>Signal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a></td>
+            <td>Kurs, historik (1 år), volym</td>
+            <td>SMA, EMA, RSI, Bollinger, MA50/200</td>
+            <td><span id="src-yahoo" class="src-badge src-neutral">Laddar…</span></td>
+          </tr>
+          <tr>
+            <td>Lokal beräkning (ingen extern källa)</td>
+            <td>RSI + Bollinger-position + kort volatilitet</td>
+            <td>Sentiment (teknisk proxy)</td>
+            <td><span id="src-sentiment" class="src-badge src-neutral">Laddar…</span></td>
+          </tr>
+          <tr>
+            <td><a href="https://finnhub.io" target="_blank" rel="noopener">Finnhub</a></td>
+            <td>Senaste TSLA-nyheter</td>
+            <td>Nyhetsflöde (5 senaste)</td>
+            <td><span id="src-finnhub" class="src-badge src-neutral">Laddar…</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 class="ta-subtitle" style="margin-top:18px">Signalbidrag per indikator</h3>
+      <div id="signal-scorecard" class="signal-scorecard"></div>
+    </section>
+
+    <section id="signal-card" class="card">
+      <h2>Köp/Sälj-signal</h2>
+      <div id="signal-badge" class="signal-badge signal-loading">Laddar analys…</div>
+      <ul id="signal-reasons" class="signal-reasons"></ul>
+      <p class="disclaimer">
+        ⚠️ Detta är <strong>inte finansiell rådgivning</strong>. Signalerna bygger på enkla,
+        historiska tekniska indikatorer (glidande medelvärden, RSI, Bollinger Bands, volym,
+        divergens och en lokal sentiment-proxy) och kan inte förutsäga framtiden. Aktier är
+        volatila – investera bara pengar du har råd att förlora och gör alltid din egen research (DYOR).
+      </p>
+    </section>
+
+    <section class="card" id="breakout-card">
+      <h2>Utbrottsanalys  <span class="ta-badge">TA</span></h2>
+
+      <div class="breakout-header">
+        <div id="breakout-badge" class="breakout-badge breakout-none">Analyserar…</div>
+        <p id="breakout-desc" class="breakout-desc"></p>
+      </div>
+
+      <div class="ta-grid">
+        <div class="ta-col">
+          <h3 class="ta-subtitle resist-color">Motstånd (Resistance)</h3>
+          <ul id="resistance-list" class="levels-list"></ul>
+        </div>
+        <div class="ta-col">
+          <h3 class="ta-subtitle support-color">Stöd (Support)</h3>
+          <ul id="support-list" class="levels-list"></ul>
+        </div>
+      </div>
+
+      <div class="ta-section">
+        <h3 class="ta-subtitle">Handelsstrategi</h3>
+        <div class="indicators">
+          <div class="indicator">
+            <span class="label">Instegsläge</span>
+            <span id="entry-price" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Stopp-loss</span>
+            <span id="stop-loss" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Vinstmål</span>
+            <span id="take-profit" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Risk / Reward</span>
+            <span id="risk-reward" class="value">–</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ta-section">
+        <h3 class="ta-subtitle">Trendbekräftelse</h3>
+        <div class="indicators">
+          <div class="indicator">
+            <span class="label">MA50 (50 dagar)</span>
+            <span id="ma50" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">MA200 (200 dagar)</span>
+            <span id="ma200" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Tillräckligt mycket handel?</span>
+            <span id="vol-confirm" class="value">–</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="disclaimer">
+        ⚠️ Motstånd- och stödnivåer identifieras automatiskt från historiken och är <strong>inte</strong> finansiell rådgivning. Gör alltid din egen analys (DYOR).
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Prisutveckling  <span class="ta-badge" style="font-size:0.7rem">MA50 + MA200</span></h2>
+      <canvas id="priceChart" height="100"></canvas>
+    </section>
+
+    <section class="card">
+      <h2>Indikatorer</h2>
+      <div class="indicators" id="indicators">
+        <div class="indicator">
+          <span class="label">SMA 7 dagar</span>
+          <span id="sma7" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">SMA 25 dagar</span>
+          <span id="sma25" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">RSI (14)</span>
+          <span id="rsi" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">EMA 12 dagar</span>
+          <span id="ema12" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">EMA 26 dagar</span>
+          <span id="ema26" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">MACD (EMA12 − EMA26)</span>
+          <span id="macd-val" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Bollinger Övre (20d)</span>
+          <span id="bb-upper" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Bollinger Mitten (20d)</span>
+          <span id="bb-mid" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Bollinger Nedre (20d)</span>
+          <span id="bb-lower" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Handel vs veckosnitt</span>
+          <span id="volume-trend" class="value">–</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="vwap-fib-card">
+      <h2>VWAP &amp; Fibonacci <span class="ta-badge">TA</span></h2>
+      <div class="indicators">
+        <div class="indicator">
+          <span class="label">VWAP (historik)</span>
+          <span id="vwap-value" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Pris vs VWAP</span>
+          <span id="vwap-signal" class="value">–</span>
+        </div>
+      </div>
+      <h3 class="ta-subtitle" style="margin-top:16px">Fibonacci Retracement (90d)</h3>
+      <div class="fib-levels" id="fib-levels"></div>
+    </section>
+
+    <section id="news-card" class="card">
+      <h2>Senaste Tesla-nyheter</h2>
+      <ul id="news-list" class="news-list">
+        <li class="news-loading">Laddar nyheter...</li>
+      </ul>
+    </section>
+
+    <section id="portfolio-card" class="card">
+      <h2>Mitt innehav – Tesla (TSLA)</h2>
+      <p class="portfolio-intro">
+        Lägg till dina egna TSLA-affärer nedan. Kurs hämtas live från Yahoo Finance. Transaktioner sparas
+        endast lokalt i din webbläsare (separat från ETH-portföljen).
+      </p>
+
+      <div class="portfolio-summary" id="portfolio-summary">
+        <div class="indicator">
+          <span class="label">Antal</span>
+          <span id="portfolio-qty" class="value">0</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Investerat</span>
+          <span id="portfolio-invested" class="value">0 kr</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Snittpris (GAV)</span>
+          <span id="portfolio-avg" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Kurs idag</span>
+          <span id="portfolio-price" class="value">Laddar…</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Värde idag</span>
+          <span id="portfolio-value" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Vinst/förlust</span>
+          <span id="portfolio-pnl" class="value">–</span>
+        </div>
+      </div>
+      <p id="portfolio-updated" class="portfolio-updated"></p>
+
+      <h3 class="ta-subtitle" style="margin-top:16px">Lägg till transaktion</h3>
+      <div class="portfolio-form-row">
+        <div class="portfolio-field">
+          <label for="portfolio-trade-date">Datum</label>
+          <input type="date" id="portfolio-trade-date" class="portfolio-input">
+        </div>
+        <div class="portfolio-field">
+          <label for="portfolio-trade-type">Typ</label>
+          <select id="portfolio-trade-type" class="portfolio-select">
+            <option value="buy">Köp</option>
+            <option value="sell">Sälj</option>
+          </select>
+        </div>
+        <div class="portfolio-field">
+          <label for="portfolio-trade-qty">Antal</label>
+          <input type="number" id="portfolio-trade-qty" class="portfolio-input" placeholder="t.ex. 10" min="1" step="1">
+        </div>
+        <div class="portfolio-field">
+          <label for="portfolio-trade-price">Kurs (USD)</label>
+          <input type="number" id="portfolio-trade-price" class="portfolio-input" placeholder="t.ex. 250.00" min="0.01" step="0.0001">
+        </div>
+        <button type="button" id="portfolio-trade-add" class="portfolio-btn">Spara transaktion</button>
+      </div>
+      <p class="portfolio-form-hint">Transaktioner sparas lokalt i webbläsaren. Manuella rader kan tas bort.</p>
+
+      <h3 class="ta-subtitle" style="margin-top:16px">Transaktionshistorik</h3>
+      <div class="portfolio-table-wrap">
+        <table class="sources-table portfolio-table">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Typ</th>
+              <th>Antal</th>
+              <th>Kurs</th>
+              <th>Belopp</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="portfolio-trades"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        Källor:
+        <a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a> (kurs, historik &amp; volym, ingen nyckel krävs) och
+        <a href="https://finnhub.io" target="_blank" rel="noopener">Finnhub</a> (nyheter, gratis nyckel).
+        Sentimentvärdet är en <strong>lokal teknisk proxy</strong> beräknad från TSLA:s egen prisdata, inte hämtad
+        från en extern sentimentkälla.
+      </p>
+    </footer>
+  </div>
+
+  <script src="tesla.js?v=1"></script>
+</body>
+</html>

@@ -123,10 +123,26 @@ const els = {
   stakingRatioPct:    document.getElementById("staking-ratio-pct"),
   stakingBestApy:     document.getElementById("staking-best-apy"),
   stakingSecurity:    document.getElementById("staking-security"),
+  // Portfölj (Valour ETH Zero SEK)
+  portfolioQty:       document.getElementById("portfolio-qty"),
+  portfolioInvested:  document.getElementById("portfolio-invested"),
+  portfolioAvg:       document.getElementById("portfolio-avg"),
+  portfolioPrice:     document.getElementById("portfolio-price"),
+  portfolioValue:     document.getElementById("portfolio-value"),
+  portfolioPnl:       document.getElementById("portfolio-pnl"),
+  portfolioUpdated:   document.getElementById("portfolio-updated"),
+  portfolioTrades:    document.getElementById("portfolio-trades"),
+  portfolioTradeDate: document.getElementById("portfolio-trade-date"),
+  portfolioTradeType: document.getElementById("portfolio-trade-type"),
+  portfolioTradeQty:  document.getElementById("portfolio-trade-qty"),
+  portfolioTradePrice: document.getElementById("portfolio-trade-price"),
+  portfolioTradeAdd:  document.getElementById("portfolio-trade-add"),
 };
 
 const fmtUsd   = (n) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtSek   = (n) => `${n.toLocaleString("sv-SE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} kr`;
+const fmtSekDec = (n, digits = 2) =>
+  `${n.toLocaleString("sv-SE", { minimumFractionDigits: digits, maximumFractionDigits: digits })} kr`;
 const fmtPct   = (n) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 const fmtLarge = (n) => {
   if (n == null || isNaN(n)) return "–";
@@ -136,13 +152,292 @@ const fmtLarge = (n) => {
   return `$${n.toLocaleString("en-US")}`;
 };
 
+// API-bas: fungerar även om sidan öppnas via file://
+const API_BASE = (location.protocol === "file:" || location.port === "")
+  ? "http://localhost:3000"
+  : "";
+
+// ─── Portfölj: Valour Ethereum (ETH) Zero SEK ────────────────────────────
+
+const PORTFOLIO_STORAGE_KEY = "eth_portfolio_trades_v1";
+
+const DEFAULT_PORTFOLIO_TRADES = [
+  { id: "seed-1", date: "2024-06-08", type: "buy", qty: 9931,  price: 16.1862, amount: 160844.45 },
+  { id: "seed-2", date: "2024-06-08", type: "buy", qty: 4791,  price: 16.07,   amount: 77090.37 },
+  { id: "seed-3", date: "2024-06-08", type: "buy", qty: 6092,  price: 15.9165, amount: 97062.41 },
+  { id: "seed-4", date: "2024-06-05", type: "buy", qty: 507,   price: 15.76,   amount: 8029.32 },
+  { id: "seed-5", date: "2024-06-05", type: "buy", qty: 4450,  price: 15.71,   amount: 70014.36 },
+  { id: "seed-6", date: "2024-06-04", type: "buy", qty: 240,   price: 16.62,   amount: 4027.80 },
+];
+
+function normalizePortfolioTrade(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const type = raw.type === "sell" ? "sell" : "buy";
+  const qty = Number(raw.qty);
+  const price = Number(raw.price);
+  const amount = Number(raw.amount);
+  if (!raw.date || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(price) || price <= 0) return null;
+  return {
+    id: typeof raw.id === "string" ? raw.id : `t-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    date: String(raw.date).slice(0, 10),
+    type,
+    qty,
+    price,
+    amount: Number.isFinite(amount) && amount > 0 ? amount : qty * price,
+    manual: Boolean(raw.manual),
+  };
+}
+
+function getPortfolioTrades() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PORTFOLIO_STORAGE_KEY));
+    if (!Array.isArray(raw) || raw.length === 0) return DEFAULT_PORTFOLIO_TRADES.map((t) => ({ ...t }));
+    const trades = raw.map(normalizePortfolioTrade).filter(Boolean);
+    return trades.length ? trades : DEFAULT_PORTFOLIO_TRADES.map((t) => ({ ...t }));
+  } catch {
+    return DEFAULT_PORTFOLIO_TRADES.map((t) => ({ ...t }));
+  }
+}
+
+function savePortfolioTrades(trades) {
+  try {
+    localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(trades));
+  } catch (e) {
+    console.error("Kunde inte spara portföljtransaktioner:", e);
+    alert("Kunde inte spara transaktionen. Lagringsutrymmet kan vara fullt.");
+  }
+}
+
+function computePortfolioMetrics(trades) {
+  const sorted = [...trades].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  let qty = 0;
+  let costBasis = 0;
+  let realizedPnl = 0;
+
+  for (const t of sorted) {
+    if (t.type === "sell") {
+      const sellQty = Math.min(t.qty, qty);
+      if (sellQty <= 0) continue;
+      const avgCost = costBasis / qty;
+      const costOfSold = avgCost * sellQty;
+      const proceeds = t.amount * (sellQty / t.qty);
+      realizedPnl += proceeds - costOfSold;
+      costBasis -= costOfSold;
+      qty -= sellQty;
+    } else {
+      qty += t.qty;
+      costBasis += t.amount;
+    }
+  }
+
+  return {
+    qty,
+    costBasis,
+    avgPrice: qty > 0 ? costBasis / qty : 0,
+    realizedPnl,
+  };
+}
+
+function renderPortfolioTrades() {
+  if (!els.portfolioTrades) return;
+  const trades = getPortfolioTrades().slice().sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  els.portfolioTrades.textContent = "";
+
+  if (trades.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 6;
+    cell.className = "portfolio-empty";
+    cell.textContent = "Inga transaktioner ännu";
+    row.appendChild(cell);
+    els.portfolioTrades.appendChild(row);
+    return;
+  }
+
+  for (const t of trades) {
+    const isSell = t.type === "sell";
+    const row = document.createElement("tr");
+    row.className = isSell ? "portfolio-row-sell" : "portfolio-row-buy";
+
+    const typeCell = document.createElement("td");
+    typeCell.innerHTML = `<span class="portfolio-type-badge ${isSell ? "portfolio-type-sell" : "portfolio-type-buy"}">${isSell ? "Sälj" : "Köp"}</span>`;
+
+    const amountCell = document.createElement("td");
+    amountCell.textContent = `${isSell ? "+" : "−"}${t.amount.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr`;
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "portfolio-action-cell";
+    if (t.manual) {
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "portfolio-remove-btn";
+      removeBtn.textContent = "Ta bort";
+      removeBtn.dataset.id = t.id;
+      removeBtn.addEventListener("click", () => removePortfolioTrade(t.id));
+      actionCell.appendChild(removeBtn);
+    } else {
+      actionCell.textContent = "–";
+    }
+
+    row.append(
+      Object.assign(document.createElement("td"), { textContent: t.date }),
+      typeCell,
+      Object.assign(document.createElement("td"), { textContent: t.qty.toLocaleString("sv-SE") }),
+      Object.assign(document.createElement("td"), {
+        textContent: `${t.price.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} kr`,
+      }),
+      amountCell,
+      actionCell,
+    );
+    els.portfolioTrades.appendChild(row);
+  }
+}
+
+function refreshPortfolioUi(currentPrice, timestamp) {
+  renderPortfolioTrades();
+  updatePortfolioSummary(currentPrice, timestamp);
+}
+
+function updatePortfolioSummary(currentPrice, timestamp) {
+  if (!els.portfolioQty) return;
+  const metrics = computePortfolioMetrics(getPortfolioTrades());
+
+  els.portfolioQty.textContent = metrics.qty.toLocaleString("sv-SE");
+  els.portfolioInvested.textContent = metrics.qty > 0 ? fmtSekDec(metrics.costBasis, 0) : "0 kr";
+  els.portfolioAvg.textContent = metrics.qty > 0 ? fmtSekDec(metrics.avgPrice, 2) : "–";
+
+  if (currentPrice == null) {
+    els.portfolioPrice.textContent = "–";
+    els.portfolioValue.textContent = metrics.qty > 0 ? "–" : "0 kr";
+    els.portfolioPnl.textContent = metrics.realizedPnl !== 0
+      ? `${metrics.realizedPnl >= 0 ? "+" : ""}${Math.round(metrics.realizedPnl).toLocaleString("sv-SE")} kr (realiserat)`
+      : "–";
+    return;
+  }
+
+  els.portfolioPrice.textContent = fmtSekDec(currentPrice, 2);
+
+  if (metrics.qty > 0) {
+    const value = metrics.qty * currentPrice;
+    const unrealized = value - metrics.costBasis;
+    const totalPnl = unrealized + metrics.realizedPnl;
+    const pnlPct = metrics.costBasis > 0 ? (unrealized / metrics.costBasis) * 100 : 0;
+    const up = totalPnl >= 0;
+
+    els.portfolioValue.textContent = fmtSekDec(value, 0);
+    const pnlText = metrics.realizedPnl !== 0
+      ? `${up ? "+" : ""}${Math.round(totalPnl).toLocaleString("sv-SE")} kr (${fmtPct(pnlPct)}, varav ${Math.round(metrics.realizedPnl).toLocaleString("sv-SE")} kr realiserat)`
+      : `${up ? "+" : ""}${Math.round(unrealized).toLocaleString("sv-SE")} kr (${fmtPct(pnlPct)})`;
+    els.portfolioPnl.textContent = pnlText;
+    els.portfolioPnl.className = `value ${up ? "up" : "down"}`;
+  } else {
+    els.portfolioValue.textContent = "0 kr";
+    const up = metrics.realizedPnl >= 0;
+    els.portfolioPnl.textContent = `${up ? "+" : ""}${Math.round(metrics.realizedPnl).toLocaleString("sv-SE")} kr (realiserat)`;
+    els.portfolioPnl.className = `value ${up ? "up" : "down"}`;
+  }
+
+  if (els.portfolioUpdated && timestamp) {
+    const when = new Date(timestamp).toLocaleString("sv-SE");
+    els.portfolioUpdated.textContent = `Kurs senast uppdaterad: ${when}`;
+  }
+}
+
+function addPortfolioTradeFromForm() {
+  const date = els.portfolioTradeDate?.value;
+  const type = els.portfolioTradeType?.value === "sell" ? "sell" : "buy";
+  const qty = parseFloat(String(els.portfolioTradeQty?.value || "").replace(",", "."));
+  const price = parseFloat(String(els.portfolioTradePrice?.value || "").replace(",", "."));
+
+  if (!date || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(price) || price <= 0) {
+    alert("Fyll i datum, antal och kurs.");
+    return;
+  }
+
+  const metrics = computePortfolioMetrics(getPortfolioTrades());
+  if (type === "sell" && qty > metrics.qty) {
+    alert(`Du kan max sälja ${metrics.qty.toLocaleString("sv-SE")} st (ditt nuvarande innehav).`);
+    return;
+  }
+
+  const trade = normalizePortfolioTrade({
+    id: `m-${Date.now()}`,
+    date,
+    type,
+    qty,
+    price,
+    amount: qty * price,
+    manual: true,
+  });
+  if (!trade) return;
+
+  const trades = getPortfolioTrades();
+  trades.push(trade);
+  savePortfolioTrades(trades);
+
+  if (els.portfolioTradeQty) els.portfolioTradeQty.value = "";
+  if (els.portfolioTradePrice) els.portfolioTradePrice.value = "";
+  refreshPortfolioUi(lastPortfolioPrice, lastPortfolioTimestamp);
+}
+
+function removePortfolioTrade(id) {
+  if (!id || !confirm("Ta bort denna transaktion?")) return;
+  const trades = getPortfolioTrades().filter((t) => t.id !== id);
+  savePortfolioTrades(trades);
+  refreshPortfolioUi(lastPortfolioPrice, lastPortfolioTimestamp);
+}
+
+function initPortfolioForm() {
+  if (els.portfolioTradeDate) {
+    els.portfolioTradeDate.value = new Date().toISOString().slice(0, 10);
+  }
+  els.portfolioTradeAdd?.addEventListener("click", addPortfolioTradeFromForm);
+}
+
+let lastPortfolioPrice = null;
+let lastPortfolioTimestamp = null;
+
+async function loadPortfolioPrice() {
+  if (!els.portfolioPrice) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/avanza/price`);
+    if (!res.ok) throw new Error(`Avanza ${res.status}`);
+    const data = await res.json();
+    lastPortfolioPrice = data.price;
+    lastPortfolioTimestamp = data.timestamp;
+    updatePortfolioSummary(data.price, data.timestamp);
+  } catch (err) {
+    console.error("Portföljkurs:", err);
+    els.portfolioPrice.textContent = "Kunde inte hämta";
+    if (els.portfolioUpdated) {
+      els.portfolioUpdated.textContent = location.protocol === "file:"
+        ? "Starta servern med npm start och öppna http://localhost:3000"
+        : "Kunde inte hämta kurs från Avanza just nu.";
+    }
+  }
+}
+
 // ─── Volymklassificering (enhetlig RVOL-skala) ─────────────────────────────
 
-function computeRvol20(volumes) {
+let lastQuoteVolume24h = null;
+
+function getUtcDayProgress() {
+  const now = new Date();
+  return (now.getUTCHours() * 3600 + now.getUTCMinutes() * 60 + now.getUTCSeconds()) / 86400;
+}
+
+function computeRvol20(volumes, quoteVolume24h = lastQuoteVolume24h) {
   if (!volumes || volumes.length < 21) return null;
-  const todayVol = volumes[volumes.length - 1];
   const avg20 = volumes.slice(volumes.length - 21, volumes.length - 1).reduce((a, b) => a + b, 0) / 20;
-  return avg20 > 0 ? todayVol / avg20 : null;
+  if (avg20 <= 0) return null;
+
+  if (quoteVolume24h != null && quoteVolume24h > 0) {
+    return quoteVolume24h / avg20;
+  }
+
+  const todayVol = volumes[volumes.length - 1];
+  const dayProgress = Math.max(getUtcDayProgress(), 0.15);
+  return (todayVol / dayProgress) / avg20;
 }
 
 function computeVolTrend7(volumes) {
@@ -291,8 +586,11 @@ function formatVolHandelStatus(rvol) {
     return { text: "Laddar…", cssClass: "vol-unknown" };
   }
   const volPct = Math.round(rvol * 100);
-  if (cls.confirmsBreakout || cls.level === "high" || cls.level === "extreme") {
+  if (cls.level === "extreme" || cls.level === "high") {
     return { text: `Ja – hög handel (${volPct}% av normalt)`, cssClass: cls.cssClass };
+  }
+  if (cls.level === "elevated") {
+    return { text: `Lite högre handel (${volPct}% av normalt)`, cssClass: cls.cssClass };
   }
   if (cls.level === "low") {
     return { text: `Nej – låg handel (${volPct}% av normalt)`, cssClass: cls.cssClass };
@@ -3580,6 +3878,7 @@ async function loadData() {
     // 2) Marknadsinformation
     const md = marketsArr?.[0];
     let quoteVolume24h = binance24h?.quoteVolume ?? md?.total_volume ?? null;
+    lastQuoteVolume24h = quoteVolume24h;
     if (md) {
       if (md.market_cap != null) els.marketCap.textContent = fmtLarge(md.market_cap);
       els.volume24h.textContent  = fmtLarge(md.total_volume ?? quoteVolume24h);
@@ -3789,6 +4088,9 @@ async function loadData() {
     // 8) Kontrollera prisalarm
     if (currentPrice) checkAlarms(currentPrice, latestRsi);
 
+    // 9) Uppdatera portföljvärde (Valour ETH Zero SEK)
+    loadPortfolioPrice();
+
   } catch (err) {
     console.error(err);
     els.signalBadge.textContent = "Kunde inte hämta data";
@@ -3807,5 +4109,8 @@ function tickCountdown() {
   els.countdown.textContent = String(secondsLeft);
 }
 
+initPortfolioForm();
 loadData();
+renderPortfolioTrades();
+loadPortfolioPrice();
 setInterval(tickCountdown, 1000);

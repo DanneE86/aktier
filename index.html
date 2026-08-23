@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0f1117">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Aktier">
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=15">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 </head>
@@ -24,6 +24,9 @@
       </a>
       <a href="stocks.html" class="nav-link">
         <span class="nav-icon" aria-hidden="true">$</span> Aktieanalys
+      </a>
+      <a href="tesla.html" class="nav-link">
+        <span class="nav-icon" aria-hidden="true">T</span> Tesla
       </a>
     </nav>
 
@@ -626,6 +629,84 @@
       <div class="fib-levels" id="fib-levels"></div>
     </section>
 
+    <section id="portfolio-card" class="card">
+      <h2>Mitt innehav – Valour Ethereum (ETH) Zero SEK</h2>
+      <p class="portfolio-intro">
+        Köp via Avanza (konto 1911757). Kurs hämtas live från
+        <a href="https://www.avanza.se/borshandlade-produkter/certifikat-torg/om-certifikatet.html/1208273/valour-ethereum-eth-zero-sek" target="_blank" rel="noopener">Avanza</a>.
+      </p>
+
+      <div class="portfolio-summary" id="portfolio-summary">
+        <div class="indicator">
+          <span class="label">Antal</span>
+          <span id="portfolio-qty" class="value">26&nbsp;011</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Investerat (inkl. courtage)</span>
+          <span id="portfolio-invested" class="value">417&nbsp;069 kr</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Snittpris (GAV)</span>
+          <span id="portfolio-avg" class="value">16,03 kr</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Kurs idag</span>
+          <span id="portfolio-price" class="value">Laddar…</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Värde idag</span>
+          <span id="portfolio-value" class="value">–</span>
+        </div>
+        <div class="indicator">
+          <span class="label">Vinst/förlust</span>
+          <span id="portfolio-pnl" class="value">–</span>
+        </div>
+      </div>
+      <p id="portfolio-updated" class="portfolio-updated"></p>
+
+      <h3 class="ta-subtitle" style="margin-top:16px">Lägg till transaktion</h3>
+      <div class="portfolio-form-row">
+        <div class="portfolio-field">
+          <label for="portfolio-trade-date">Datum</label>
+          <input type="date" id="portfolio-trade-date" class="portfolio-input">
+        </div>
+        <div class="portfolio-field">
+          <label for="portfolio-trade-type">Typ</label>
+          <select id="portfolio-trade-type" class="portfolio-select">
+            <option value="buy">Köp</option>
+            <option value="sell">Sälj</option>
+          </select>
+        </div>
+        <div class="portfolio-field">
+          <label for="portfolio-trade-qty">Antal</label>
+          <input type="number" id="portfolio-trade-qty" class="portfolio-input" placeholder="t.ex. 26011" min="1" step="1">
+        </div>
+        <div class="portfolio-field">
+          <label for="portfolio-trade-price">Kurs (kr)</label>
+          <input type="number" id="portfolio-trade-price" class="portfolio-input" placeholder="t.ex. 18,18" min="0.01" step="0.0001">
+        </div>
+        <button type="button" id="portfolio-trade-add" class="portfolio-btn">Spara transaktion</button>
+      </div>
+      <p class="portfolio-form-hint">Transaktioner sparas lokalt i webbläsaren. Manuella rader kan tas bort.</p>
+
+      <h3 class="ta-subtitle" style="margin-top:16px">Transaktionshistorik</h3>
+      <div class="portfolio-table-wrap">
+        <table class="sources-table portfolio-table">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Typ</th>
+              <th>Antal</th>
+              <th>Kurs</th>
+              <th>Belopp</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="portfolio-trades"></tbody>
+        </table>
+      </div>
+    </section>
+
     <footer>
       <p>
         Källor:
@@ -642,6 +723,6 @@
     </footer>
   </div>
 
-  <script src="script.js?v=13"></script>
+  <script src="script.js?v=16"></script>
 </body>
 </html>

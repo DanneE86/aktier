@@ -28,6 +28,12 @@
       "short_name": "ETH",
       "url": "/index.html",
       "description": "Ethereum pris och analys"
+    },
+    {
+      "name": "Tesla Tracker",
+      "short_name": "Tesla",
+      "url": "/tesla.html",
+      "description": "Tesla (TSLA) pris och köp/sälj-signaler"
     }
   ]
 }

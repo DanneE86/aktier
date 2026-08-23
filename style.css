@@ -599,6 +599,164 @@ select:focus-visible {
 .sources-table a { color: #8a9cff; text-decoration: none; }
 .sources-table a:hover { text-decoration: underline; }
 
+/* ── Portfölj (Valour ETH Zero SEK) ─────────────── */
+
+.portfolio-intro {
+  font-size: 0.88rem;
+  color: #9aa0b4;
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.portfolio-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.portfolio-updated {
+  font-size: 0.78rem;
+  color: #8b91ab;
+  margin: 0 0 8px;
+}
+
+.portfolio-table-wrap {
+  overflow-x: auto;
+}
+
+.portfolio-table th:nth-child(2),
+.portfolio-table th:nth-child(3),
+.portfolio-table th:nth-child(4),
+.portfolio-table th:nth-child(5) {
+  text-align: right;
+}
+
+.portfolio-table td:nth-child(2),
+.portfolio-table td:nth-child(3),
+.portfolio-table td:nth-child(4),
+.portfolio-table td:nth-child(5) {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.portfolio-table td:nth-child(2) {
+  text-align: left;
+}
+
+.portfolio-table th:nth-child(2) {
+  text-align: left;
+}
+
+.portfolio-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.portfolio-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.portfolio-field label {
+  font-size: 0.78rem;
+  color: #9aa0b4;
+}
+
+.portfolio-input,
+.portfolio-select {
+  background: #1a1f2e;
+  border: 1px solid #2a3148;
+  border-radius: 8px;
+  color: #e8eaf0;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+}
+
+.portfolio-input:focus,
+.portfolio-select:focus {
+  outline: none;
+  border-color: #6c7cff;
+}
+
+.portfolio-btn {
+  background: #6c7cff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.portfolio-btn:hover {
+  background: #8590ff;
+}
+
+.portfolio-form-hint {
+  font-size: 0.78rem;
+  color: #8b91ab;
+  margin: 0 0 8px;
+}
+
+.portfolio-type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.portfolio-type-buy {
+  background: rgba(46, 204, 113, 0.15);
+  color: #4ce081;
+}
+
+.portfolio-type-sell {
+  background: rgba(231, 76, 60, 0.15);
+  color: #ff6f61;
+}
+
+.portfolio-row-sell td:nth-child(5) {
+  color: #ff6f61;
+}
+
+.portfolio-row-buy td:nth-child(5) {
+  color: #9aa0b4;
+}
+
+.portfolio-action-cell {
+  text-align: center !important;
+}
+
+.portfolio-remove-btn {
+  background: transparent;
+  border: 1px solid #3a4158;
+  color: #9aa0b4;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.portfolio-remove-btn:hover {
+  border-color: #ff6f61;
+  color: #ff6f61;
+}
+
+.portfolio-empty {
+  text-align: center;
+  color: #8b91ab;
+  padding: 16px;
+}
+
 .src-badge {
   display: inline-block;
   padding: 3px 10px;
@@ -656,6 +814,18 @@ select:focus-visible {
 .sc-bull { background: rgba(46,204,113,0.15); color: #4ce081; }
 .sc-bear { background: rgba(231,76,60,0.15);  color: #ff6f61; }
 .sc-neut { background: #2b3252; color: #9aa0b4; }
+
+.sc-buffett-note {
+  flex: 1 1 100%;
+  background: rgba(241,196,15,0.08);
+  border: 1px solid rgba(241,196,15,0.3);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: #f4d35e;
+  margin: 0 0 4px;
+}
 
 /* ── Utbrottsanalys ──────────────────────────────── */
 

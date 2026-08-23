@@ -1,12 +1,14 @@
-const CACHE = "aktier-v6";
+const CACHE = "aktier-v7";
 const SHELL = [
   "/",
   "/index.html",
   "/stocks.html",
+  "/tesla.html",
   "/style.css",
   "/stocks-style.css",
   "/script.js",
   "/stocks.js",
+  "/tesla.js",
   "/icon.svg",
   "/manifest.json"
 ];
