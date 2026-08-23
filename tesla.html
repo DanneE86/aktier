@@ -19,13 +19,13 @@
 
     <!-- Navigation -->
     <nav class="nav-bar" role="navigation" aria-label="Huvudnavigation">
-      <a href="index.html" class="nav-link">
+      <a href="index.html" class="nav-link" data-testid="tab-nav-eth">
         <span class="nav-icon" aria-hidden="true">&Xi;</span> ETH Tracker
       </a>
-      <a href="stocks.html" class="nav-link">
+      <a href="stocks.html" class="nav-link" data-testid="tab-nav-stocks">
         <span class="nav-icon" aria-hidden="true">$</span> Aktieanalys
       </a>
-      <a href="tesla.html" class="nav-link nav-link-active" aria-current="page">
+      <a href="tesla.html" class="nav-link nav-link-active" aria-current="page" data-testid="tab-nav-tesla">
         <span class="nav-icon" aria-hidden="true">T</span> Tesla
       </a>
     </nav>
@@ -47,7 +47,7 @@
       </div>
     </header>
 
-    <section id="price-card" class="card">
+    <section id="price-card" class="card" data-testid="block-price-card">
       <div class="price-main">
         <span class="label">Pris (USD) · Yahoo Finance</span>
         <span id="price-usd" class="price">–</span>
@@ -90,7 +90,7 @@
       </div>
     </section>
 
-    <section id="divergence-card" class="card divergence-card">
+    <section id="divergence-card" class="card divergence-card" data-testid="block-divergence-card">
       <h2>⚡ Divergens-varning <span class="ta-badge">Topp/botten-signal</span></h2>
       <p class="divergence-intro">
         Jämför prisets toppar/bottnar mot RSI och MACD de senaste 90 handelsdagarna. När priset gör en ny
@@ -106,7 +106,7 @@
       </p>
     </section>
 
-    <section id="market-card" class="card">
+    <section id="market-card" class="card" data-testid="block-market-card">
       <h2>Marknadsinformation</h2>
       <div class="indicators">
         <div class="indicator">
@@ -128,7 +128,7 @@
       </div>
     </section>
 
-    <section id="volume-card" class="card">
+    <section id="volume-card" class="card" data-testid="block-volume-card">
       <h2>Volym – förklarat enkelt</h2>
       <p class="vol-card-intro">Volym = hur många TSLA-aktier som köpts och sålts. Ju mer handel, desto mer meningsfull är en prisrörelse.</p>
       <div class="vol-header">
@@ -154,7 +154,7 @@
       <p class="vol-help">Enklare sagt: handlas det mycket idag jämfört med en vanlig dag? Mycket handel + stigande pris = starkare köpsignal. Lite handel + stigande pris = kan vara en bluff.</p>
     </section>
 
-    <section id="sentiment-card" class="card">
+    <section id="sentiment-card" class="card" data-testid="block-sentiment-card">
       <h2>Sentiment (teknisk proxy)</h2>
       <div class="sentiment-row">
         <div id="sentiment-gauge" class="sentiment-gauge sentiment-loading">–</div>
@@ -170,7 +170,7 @@
       </div>
     </section>
 
-    <section class="card" id="sources-card">
+    <section class="card" id="sources-card" data-testid="block-sources-card">
       <h2>Datakällor &amp; signalbidrag</h2>
       <table class="sources-table">
         <thead>
@@ -207,7 +207,7 @@
       <div id="signal-scorecard" class="signal-scorecard"></div>
     </section>
 
-    <section id="signal-card" class="card">
+    <section id="signal-card" class="card" data-testid="block-signal-card">
       <h2>Köp/Sälj-signal</h2>
       <div id="signal-badge" class="signal-badge signal-loading">Laddar analys…</div>
       <ul id="signal-reasons" class="signal-reasons"></ul>
@@ -219,7 +219,7 @@
       </p>
     </section>
 
-    <section class="card" id="breakout-card">
+    <section class="card" id="breakout-card" data-testid="block-breakout-card">
       <h2>Utbrottsanalys  <span class="ta-badge">TA</span></h2>
 
       <div class="breakout-header">
@@ -283,12 +283,12 @@
       </p>
     </section>
 
-    <section class="card">
+    <section class="card" data-testid="block-price-chart-card">
       <h2>Prisutveckling  <span class="ta-badge" style="font-size:0.7rem">MA50 + MA200</span></h2>
       <canvas id="priceChart" height="100"></canvas>
     </section>
 
-    <section class="card">
+    <section class="card" data-testid="block-indicators-card">
       <h2>Indikatorer</h2>
       <div class="indicators" id="indicators">
         <div class="indicator">
@@ -334,7 +334,7 @@
       </div>
     </section>
 
-    <section class="card" id="vwap-fib-card">
+    <section class="card" id="vwap-fib-card" data-testid="block-vwap-fib-card">
       <h2>VWAP &amp; Fibonacci <span class="ta-badge">TA</span></h2>
       <div class="indicators">
         <div class="indicator">
@@ -350,14 +350,14 @@
       <div class="fib-levels" id="fib-levels"></div>
     </section>
 
-    <section id="news-card" class="card">
+    <section id="news-card" class="card" data-testid="block-news-card">
       <h2>Senaste Tesla-nyheter</h2>
       <ul id="news-list" class="news-list">
         <li class="news-loading">Laddar nyheter...</li>
       </ul>
     </section>
 
-    <section id="portfolio-card" class="card">
+    <section id="portfolio-card" class="card" data-testid="block-portfolio-card">
       <h2>Mitt innehav – Tesla (TSLA)</h2>
       <p class="portfolio-intro">
         Lägg till dina egna TSLA-affärer nedan. Kurs hämtas live från Yahoo Finance. Transaktioner sparas

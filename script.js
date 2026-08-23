@@ -258,6 +258,7 @@ function renderPortfolioTrades() {
     const isSell = t.type === "sell";
     const row = document.createElement("tr");
     row.className = isSell ? "portfolio-row-sell" : "portfolio-row-buy";
+    row.setAttribute("data-testid", `portfolio-row-${t.id}`);
 
     const typeCell = document.createElement("td");
     typeCell.innerHTML = `<span class="portfolio-type-badge ${isSell ? "portfolio-type-sell" : "portfolio-type-buy"}">${isSell ? "Sälj" : "Köp"}</span>`;
@@ -3467,8 +3468,9 @@ async function loadNews() {
       return;
     }
 
-    articles.forEach(article => {
+    articles.forEach((article, idx) => {
       const li = document.createElement("li");
+      li.setAttribute("data-testid", `news-row-${idx}`);
       const link = document.createElement("a");
       link.href = article.url;
       link.target = "_blank";
@@ -3612,6 +3614,7 @@ function renderAlarmList() {
 
   alarms.forEach((alarm, idx) => {
     const li = document.createElement("li");
+    li.setAttribute("data-testid", `alarm-row-${alarm.createdAt}`);
     const infoSpan = document.createElement("span");
     infoSpan.className = "alarm-info";
 

@@ -19,13 +19,13 @@
 
     <!-- Navigation -->
     <nav class="nav-bar" role="navigation" aria-label="Huvudnavigation">
-      <a href="index.html" class="nav-link nav-link-active" aria-current="page">
+      <a href="index.html" class="nav-link nav-link-active" aria-current="page" data-testid="tab-nav-eth">
         <span class="nav-icon" aria-hidden="true">&Xi;</span> ETH Tracker
       </a>
-      <a href="stocks.html" class="nav-link">
+      <a href="stocks.html" class="nav-link" data-testid="tab-nav-stocks">
         <span class="nav-icon" aria-hidden="true">$</span> Aktieanalys
       </a>
-      <a href="tesla.html" class="nav-link">
+      <a href="tesla.html" class="nav-link" data-testid="tab-nav-tesla">
         <span class="nav-icon" aria-hidden="true">T</span> Tesla
       </a>
     </nav>
@@ -47,7 +47,7 @@
       </div>
     </header>
 
-    <section id="price-card" class="card">
+    <section id="price-card" class="card" data-testid="block-price-card">
       <div class="price-main">
         <span class="label">Pris (USD) · CoinGecko</span>
         <span id="price-usd" class="price">–</span>
@@ -90,7 +90,7 @@
       </div>
     </section>
 
-    <section id="divergence-card" class="card divergence-card">
+    <section id="divergence-card" class="card divergence-card" data-testid="block-divergence-card">
       <h2>⚡ Divergens-varning <span class="ta-badge">Topp/botten-signal</span></h2>
       <p class="divergence-intro">
         Jämför prisets toppar/bottnar mot RSI och MACD de senaste 90 dagarna. När priset gör en ny
@@ -106,7 +106,7 @@
       </p>
     </section>
 
-    <section id="market-card" class="card">
+    <section id="market-card" class="card" data-testid="block-market-card">
       <h2>Marknadsinformation</h2>
       <div class="indicators">
         <div class="indicator">
@@ -136,7 +136,7 @@
       </div>
     </section>
 
-    <section id="volume-card" class="card">
+    <section id="volume-card" class="card" data-testid="block-volume-card">
       <h2>Volym – förklarat enkelt</h2>
       <p class="vol-card-intro">Volym = hur mycket ETH som köpts och sålts. Ju mer handel, desto mer meningsfull är en prisrörelse.</p>
       <div class="vol-header">
@@ -162,7 +162,7 @@
       <p class="vol-help">Enklare sagt: handlas det mycket idag jämfört med en vanlig dag? Mycket handel + stigande pris = starkare köpsignal. Lite handel + stigande pris = kan vara en bluff.</p>
     </section>
 
-    <section id="supply-card" class="card">
+    <section id="supply-card" class="card" data-testid="block-supply-card">
       <h2>ETH Tokenomics</h2>
       <div class="indicators">
         <div class="indicator">
@@ -184,7 +184,7 @@
       </div>
     </section>
 
-    <section id="staking-dashboard-card" class="card">
+    <section id="staking-dashboard-card" class="card" data-testid="block-staking-dashboard-card">
       <h2>ETH Staking Overview</h2>
       <div class="indicators">
         <div class="indicator">
@@ -209,7 +209,7 @@
       </p>
     </section>
 
-    <section id="sentiment-card" class="card">
+    <section id="sentiment-card" class="card" data-testid="block-sentiment-card">
       <h2>Marknadssentiment</h2>
       <div class="sentiment-row">
         <div id="sentiment-gauge" class="sentiment-gauge sentiment-loading">–</div>
@@ -224,7 +224,7 @@
       </div>
     </section>
 
-    <section id="defi-card" class="card">
+    <section id="defi-card" class="card" data-testid="block-defi-card">
       <h2>DeFi & Staking</h2>
       <div class="defi-tvl-row">
         <div>
@@ -242,7 +242,7 @@
       </ul>
     </section>
 
-    <section id="l2-card" class="card">
+    <section id="l2-card" class="card" data-testid="block-l2-card">
       <h2>Layer 2 Ekosystem</h2>
       <div class="l2-total-row">
         <span class="label">Total L2 TVL</span>
@@ -254,7 +254,7 @@
       </div>
     </section>
 
-    <section id="gas-card" class="card">
+    <section id="gas-card" class="card" data-testid="block-gas-card">
       <h2>Gas Tracker</h2>
       <div class="gas-status-row">
         <span class="label">Nätverksbelastning</span>
@@ -283,7 +283,7 @@
       </div>
     </section>
 
-    <section id="correlation-card" class="card">
+    <section id="correlation-card" class="card" data-testid="block-correlation-card">
       <h2>ETH vs Marknaden</h2>
       <div class="corr-ratio-row">
         <div>
@@ -314,7 +314,7 @@
       </div>
     </section>
 
-    <section id="alarm-card" class="card">
+    <section id="alarm-card" class="card" data-testid="block-alarm-card">
       <h2>Prisalarm & Notifikationer</h2>
       <div class="alarm-form-row">
         <div class="alarm-field">
@@ -345,7 +345,7 @@
       </div>
     </section>
 
-    <section class="card" id="sources-card">
+    <section class="card" id="sources-card" data-testid="block-sources-card">
       <h2>Datakällor &amp; signalbidrag</h2>
       <table class="sources-table">
         <thead>
@@ -406,7 +406,7 @@
       <div id="signal-scorecard" class="signal-scorecard"></div>
     </section>
 
-    <section id="signal-card" class="card">
+    <section id="signal-card" class="card" data-testid="block-signal-card">
       <h2>Köp/Sälj-signal</h2>
       <div id="signal-badge" class="signal-badge signal-loading">Laddar analys…</div>
       <ul id="signal-reasons" class="signal-reasons"></ul>
@@ -418,28 +418,28 @@
       </p>
     </section>
 
-    <section id="forecast-card" class="card">
+    <section id="forecast-card" class="card" data-testid="block-forecast-card">
       <h2>Prisprognos <span class="ta-badge">TA</span></h2>
       <p class="forecast-card-intro">Kort sikt (1 vecka / 1 månad) = våra modeller. Flikarna <strong>2027–2035</strong> visar vad vi tror ETH kan kosta vid årsskiftet.</p>
       <div class="forecast-tabs">
-        <button class="forecast-tab forecast-tab-active" data-horizon="7">1 vecka</button>
-        <button class="forecast-tab" data-horizon="30">1 månad</button>
-        <button class="forecast-tab forecast-tab-year" data-year="2027">2027</button>
-        <button class="forecast-tab forecast-tab-year" data-year="2028">2028</button>
-        <button class="forecast-tab forecast-tab-year" data-year="2029">2029</button>
-        <button class="forecast-tab forecast-tab-year forecast-tab-2030" data-year="2030">2030</button>
-        <button class="forecast-tab forecast-tab-year" data-year="2031">2031</button>
-        <button class="forecast-tab forecast-tab-year" data-year="2032">2032</button>
-        <button class="forecast-tab forecast-tab-year" data-year="2033">2033</button>
-        <button class="forecast-tab forecast-tab-year" data-year="2034">2034</button>
-        <button class="forecast-tab forecast-tab-year" data-year="2035">2035</button>
+        <button class="forecast-tab forecast-tab-active" data-horizon="7" data-testid="tab-forecast-7d">1 vecka</button>
+        <button class="forecast-tab" data-horizon="30" data-testid="tab-forecast-30d">1 månad</button>
+        <button class="forecast-tab forecast-tab-year" data-year="2027" data-testid="tab-forecast-2027">2027</button>
+        <button class="forecast-tab forecast-tab-year" data-year="2028" data-testid="tab-forecast-2028">2028</button>
+        <button class="forecast-tab forecast-tab-year" data-year="2029" data-testid="tab-forecast-2029">2029</button>
+        <button class="forecast-tab forecast-tab-year forecast-tab-2030" data-year="2030" data-testid="tab-forecast-2030">2030</button>
+        <button class="forecast-tab forecast-tab-year" data-year="2031" data-testid="tab-forecast-2031">2031</button>
+        <button class="forecast-tab forecast-tab-year" data-year="2032" data-testid="tab-forecast-2032">2032</button>
+        <button class="forecast-tab forecast-tab-year" data-year="2033" data-testid="tab-forecast-2033">2033</button>
+        <button class="forecast-tab forecast-tab-year" data-year="2034" data-testid="tab-forecast-2034">2034</button>
+        <button class="forecast-tab forecast-tab-year" data-year="2035" data-testid="tab-forecast-2035">2035</button>
       </div>
       <div id="forecast-content" class="forecast-content">
         <div class="forecast-loading">Beräknar prognoser...</div>
       </div>
     </section>
 
-    <section class="card" id="breakout-card">
+    <section class="card" id="breakout-card" data-testid="block-breakout-card">
       <h2>Utbrottsanalys  <span class="ta-badge">TA</span></h2>
 
       <div class="breakout-header">
@@ -503,7 +503,7 @@
       </p>
     </section>
 
-    <section id="roadmap-card" class="card">
+    <section id="roadmap-card" class="card" data-testid="block-roadmap-card">
       <h2>Ethereum Roadmap &amp; Nyheter</h2>
       <div class="roadmap-container">
         <h3 class="ta-subtitle">Uppgraderingstidslinje</h3>
@@ -558,16 +558,16 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" data-testid="block-price-chart-card">
       <h2>Prisutveckling (1 år)  <span class="ta-badge" style="font-size:0.7rem">MA50 + MA200</span></h2>
       <canvas id="priceChart" height="100"></canvas>
     </section>
 
-    <section class="card">
+    <section class="card" data-testid="block-indicators-card">
       <h2>Indikatorer</h2>
       <div class="timeframe-tabs" id="timeframe-tabs">
-        <button class="timeframe-tab timeframe-tab-active" data-tf="1d">1 dag</button>
-        <button class="timeframe-tab" data-tf="1w">1 vecka</button>
+        <button class="timeframe-tab timeframe-tab-active" data-tf="1d" data-testid="tab-timeframe-1d">1 dag</button>
+        <button class="timeframe-tab" data-tf="1w" data-testid="tab-timeframe-1w">1 vecka</button>
       </div>
       <div class="indicators" id="indicators">
         <div class="indicator">
@@ -613,7 +613,7 @@
       </div>
     </section>
 
-    <section class="card" id="vwap-fib-card">
+    <section class="card" id="vwap-fib-card" data-testid="block-vwap-fib-card">
       <h2>VWAP & Fibonacci <span class="ta-badge">TA</span></h2>
       <div class="indicators">
         <div class="indicator">
@@ -629,7 +629,7 @@
       <div class="fib-levels" id="fib-levels"></div>
     </section>
 
-    <section id="portfolio-card" class="card">
+    <section id="portfolio-card" class="card" data-testid="block-portfolio-card">
       <h2>Mitt innehav – Valour Ethereum (ETH) Zero SEK</h2>
       <p class="portfolio-intro">
         Köp via Avanza (konto 1911757). Kurs hämtas live från

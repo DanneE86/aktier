@@ -964,6 +964,7 @@ function renderStockCard(stock) {
   const card = el("div", "stock-card card " + signalClass);
   card.dataset.ticker = stock.ticker;
   card.dataset.market = stock.market;
+  card.setAttribute("data-testid", "stock-card-" + stock.ticker);
 
   // -- Rad 1: Header
   const header = el("div", "stock-card-header");
@@ -1229,6 +1230,7 @@ function renderScannerCard(hit) {
   const riskScore = hit.risk_score || 3;
   const borderClass = riskScore <= 2 ? "stock-card-buy" : riskScore <= 3 ? "stock-card-hold" : "stock-card-sell";
   const card = el("div", "stock-card card " + borderClass);
+  card.setAttribute("data-testid", "stock-card-" + (hit.ticker || "unknown"));
 
   // Header
   const header = el("div", "stock-card-header");
@@ -1611,6 +1613,7 @@ function renderRocketCard(rocket, rank, isYesterday, targetDate) {
   const borderClass = riskScore <= 2 ? "stock-card-buy" : riskScore <= 3 ? "stock-card-hold" : "stock-card-sell";
   const card = el("div", "stock-card card " + borderClass);
   card.style.position = "relative";
+  card.setAttribute("data-testid", "stock-card-" + (rocket.ticker || "unknown"));
 
   // Rank badge
   const rankBadge = el("div", "");

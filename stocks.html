@@ -19,13 +19,13 @@
 
     <!-- ===== NAVIGATION ===== -->
     <nav class="nav-bar" role="navigation" aria-label="Huvudnavigation">
-      <a href="index.html" class="nav-link">
+      <a href="index.html" class="nav-link" data-testid="tab-nav-eth">
         <span class="nav-icon" aria-hidden="true">&Xi;</span> ETH Tracker
       </a>
-      <a href="stocks.html" class="nav-link nav-link-active" aria-current="page">
+      <a href="stocks.html" class="nav-link nav-link-active" aria-current="page" data-testid="tab-nav-stocks">
         <span class="nav-icon" aria-hidden="true">$</span> Aktieanalys
       </a>
-      <a href="tesla.html" class="nav-link">
+      <a href="tesla.html" class="nav-link" data-testid="tab-nav-tesla">
         <span class="nav-icon" aria-hidden="true">T</span> Tesla
       </a>
     </nav>
@@ -37,18 +37,18 @@
     </header>
 
     <!-- ===== FLIKNAVIGERING: TIDSHORISONT ===== -->
-    <section class="card" id="horizon-card">
+    <section class="card" id="horizon-card" data-testid="block-horizon-card">
       <div class="stock-tabs" role="tablist" aria-label="Tidshorisont">
-        <button class="stock-tab" data-horizon="rockets" role="tab" aria-selected="false">
+        <button class="stock-tab" data-horizon="rockets" role="tab" aria-selected="false" data-testid="tab-horizon-rockets">
           Raketer (topp 3)
         </button>
-        <button class="stock-tab" data-horizon="scanner" role="tab" aria-selected="false">
+        <button class="stock-tab" data-horizon="scanner" role="tab" aria-selected="false" data-testid="tab-horizon-scanner">
           Scanner (under $10)
         </button>
-        <button class="stock-tab stock-tab-active" data-horizon="short" role="tab" aria-selected="true">
+        <button class="stock-tab stock-tab-active" data-horizon="short" role="tab" aria-selected="true" data-testid="tab-horizon-short">
           Kortsiktig (1v–1m)
         </button>
-        <button class="stock-tab" data-horizon="long" role="tab" aria-selected="false">
+        <button class="stock-tab" data-horizon="long" role="tab" aria-selected="false" data-testid="tab-horizon-long">
           Långsiktig (år)
         </button>
       </div>
@@ -58,9 +58,9 @@
         <div class="filter-group">
           <span class="label" id="market-filter-label">Marknad</span>
           <div class="filter-buttons" role="group" aria-labelledby="market-filter-label">
-            <button class="filter-btn filter-btn-active" data-market="all">Alla</button>
-            <button class="filter-btn" data-market="SE">Sverige</button>
-            <button class="filter-btn" data-market="US">USA</button>
+            <button class="filter-btn filter-btn-active" data-market="all" data-testid="tab-market-all">Alla</button>
+            <button class="filter-btn" data-market="SE" data-testid="tab-market-se">Sverige</button>
+            <button class="filter-btn" data-market="US" data-testid="tab-market-us">USA</button>
           </div>
         </div>
         <div class="filter-group">
@@ -76,7 +76,7 @@
     </section>
 
     <!-- ===== SCANNER STATUS (visas bara i scanner-läge) ===== -->
-    <section id="scanner-status-section" class="card" style="display:none">
+    <section id="scanner-status-section" class="card" style="display:none" data-testid="block-scanner-status-section">
       <div class="scanner-status-row">
         <div>
           <span class="label">Scanner-status</span>
@@ -100,19 +100,19 @@
         <div class="filter-group">
           <span class="label">Prisklass</span>
           <div class="filter-buttons" role="group" aria-label="Prisklassfilter">
-            <button class="filter-btn filter-btn-active" data-tier="all">Alla under $10</button>
-            <button class="filter-btn" data-tier="under1">Under $1</button>
-            <button class="filter-btn" data-tier="under5">$1 – $5</button>
-            <button class="filter-btn" data-tier="5to10">$5 – $10</button>
+            <button class="filter-btn filter-btn-active" data-tier="all" data-testid="tab-tier-all">Alla under $10</button>
+            <button class="filter-btn" data-tier="under1" data-testid="tab-tier-under1">Under $1</button>
+            <button class="filter-btn" data-tier="under5" data-testid="tab-tier-under5">$1 – $5</button>
+            <button class="filter-btn" data-tier="5to10" data-testid="tab-tier-5to10">$5 – $10</button>
           </div>
         </div>
         <div class="filter-group">
           <span class="label">Typ</span>
           <div class="filter-buttons" role="group" aria-label="Typfilter">
-            <button class="filter-btn filter-btn-active" data-scantype="all">Alla</button>
-            <button class="filter-btn" data-scantype="momentum">Momentum</button>
-            <button class="filter-btn" data-scantype="catalyst">Katalysator</button>
-            <button class="filter-btn" data-scantype="trending">Trending</button>
+            <button class="filter-btn filter-btn-active" data-scantype="all" data-testid="tab-scantype-all">Alla</button>
+            <button class="filter-btn" data-scantype="momentum" data-testid="tab-scantype-momentum">Momentum</button>
+            <button class="filter-btn" data-scantype="catalyst" data-testid="tab-scantype-catalyst">Katalysator</button>
+            <button class="filter-btn" data-scantype="trending" data-testid="tab-scantype-trending">Trending</button>
           </div>
         </div>
       </div>
@@ -124,7 +124,7 @@
     </section>
 
     <!-- ===== API-STATUS (kompakt) ===== -->
-    <section id="api-status-card" class="card" style="padding:8px 16px">
+    <section id="api-status-card" class="card" style="padding:8px 16px" data-testid="block-api-status-card">
       <div class="api-status-row" style="font-size:0.8rem">
         <span class="label">Datakälla</span>
         <span id="api-status-badge" class="src-badge src-neutral" style="font-size:0.7rem">Ansluter...</span>
@@ -135,12 +135,12 @@
     </section>
 
     <!-- ===== AKTIELISTA ===== -->
-    <section id="stock-list-section" aria-label="Aktielista">
+    <section id="stock-list-section" aria-label="Aktielista" data-testid="block-stock-list-section">
       <!-- Renderas dynamiskt av stocks.js -->
     </section>
 
     <!-- ===== DETALJVY (MODAL / OVERLAY) ===== -->
-    <section id="stock-detail-overlay" class="stock-detail-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Detaljerad aktieanalys">
+    <section id="stock-detail-overlay" class="stock-detail-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Detaljerad aktieanalys" data-testid="block-stock-detail-overlay">
       <div class="stock-detail-container card">
         <button id="detail-close-btn" class="detail-close-btn" aria-label="Stäng detaljvy">&times; Stäng</button>
 
@@ -316,7 +316,7 @@
     </section>
 
     <!-- ===== DATAKÄLLOR ===== -->
-    <section class="card" id="stocks-sources-card">
+    <section class="card" id="stocks-sources-card" data-testid="block-stocks-sources-card">
       <h2>Datakällor &amp; API:er</h2>
       <table class="sources-table">
         <thead>
