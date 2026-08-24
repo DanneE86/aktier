@@ -106,182 +106,190 @@
       </p>
     </section>
 
-    <section id="market-card" class="card" data-testid="block-market-card">
-      <h2>Marknadsinformation</h2>
-      <div class="indicators">
-        <div class="indicator">
-          <span class="label">Marknadsvärde</span>
-          <span id="market-cap" class="value">–</span>
+    <div class="card-grid-2">
+      <section id="market-card" class="card" data-testid="block-market-card">
+        <h2>Marknadsinformation</h2>
+        <div class="indicators">
+          <div class="indicator">
+            <span class="label">Marknadsvärde</span>
+            <span id="market-cap" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Handel idag (24h)</span>
+            <span id="volume-24h" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Förändring 7 dagar</span>
+            <span id="change-7d" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Förändring 30 dagar</span>
+            <span id="change-30d" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">All Time High</span>
+            <span id="ath-price" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Avstånd från ATH</span>
+            <span id="ath-distance" class="value">–</span>
+          </div>
         </div>
-        <div class="indicator">
-          <span class="label">Handel idag (24h)</span>
-          <span id="volume-24h" class="value">–</span>
-        </div>
-        <div class="indicator">
-          <span class="label">Förändring 7 dagar</span>
-          <span id="change-7d" class="value">–</span>
-        </div>
-        <div class="indicator">
-          <span class="label">Förändring 30 dagar</span>
-          <span id="change-30d" class="value">–</span>
-        </div>
-        <div class="indicator">
-          <span class="label">All Time High</span>
-          <span id="ath-price" class="value">–</span>
-        </div>
-        <div class="indicator">
-          <span class="label">Avstånd från ATH</span>
-          <span id="ath-distance" class="value">–</span>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="volume-card" class="card" data-testid="block-volume-card">
-      <h2>Volym – förklarat enkelt</h2>
-      <p class="vol-card-intro">Volym = hur mycket ETH som köpts och sålts. Ju mer handel, desto mer meningsfull är en prisrörelse.</p>
-      <div class="vol-header">
-        <span id="vol-level-badge" class="vol-badge vol-unknown">–</span>
-        <span id="vol-rvol-summary" class="vol-rvol-summary">–</span>
-      </div>
-      <div class="indicators">
-        <div class="indicator">
-          <span class="label">Idag vs snitt (20 dagar)</span>
-          <span id="vol-rvol-value" class="value">–</span>
+      <section id="volume-card" class="card" data-testid="block-volume-card">
+        <h2>Volym – förklarat enkelt</h2>
+        <p class="vol-card-intro">Volym = hur mycket ETH som köpts och sålts. Ju mer handel, desto mer meningsfull är en prisrörelse.</p>
+        <div class="vol-header">
+          <span id="vol-level-badge" class="vol-badge vol-unknown">–</span>
+          <span id="vol-rvol-summary" class="vol-rvol-summary">–</span>
         </div>
-        <div class="indicator">
-          <span class="label">Senaste veckan</span>
-          <span id="vol-7d-trend" class="value">–</span>
+        <div class="indicators">
+          <div class="indicator">
+            <span class="label">Idag vs snitt (20 dagar)</span>
+            <span id="vol-rvol-value" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Senaste veckan</span>
+            <span id="vol-7d-trend" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Vad gör priset?</span>
+            <span id="vol-direction" class="value">–</span>
+          </div>
         </div>
-        <div class="indicator">
-          <span class="label">Vad gör priset?</span>
-          <span id="vol-direction" class="value">–</span>
-        </div>
-      </div>
-      <p id="vol-insight" class="vol-insight">Laddar…</p>
-      <p id="vol-tendency" class="vol-tendency"></p>
-      <p class="vol-help">Enklare sagt: handlas det mycket idag jämfört med en vanlig dag? Mycket handel + stigande pris = starkare köpsignal. Lite handel + stigande pris = kan vara en bluff.</p>
-    </section>
+        <p id="vol-insight" class="vol-insight">Laddar…</p>
+        <p id="vol-tendency" class="vol-tendency"></p>
+        <p class="vol-help">Enklare sagt: handlas det mycket idag jämfört med en vanlig dag? Mycket handel + stigande pris = starkare köpsignal. Lite handel + stigande pris = kan vara en bluff.</p>
+      </section>
+    </div>
 
-    <section id="supply-card" class="card" data-testid="block-supply-card">
-      <h2>ETH Tokenomics</h2>
-      <div class="indicators">
-        <div class="indicator">
-          <span class="label">Cirkulerande Supply</span>
-          <span id="supply-circulating" class="value">–</span>
+    <div class="card-grid-2">
+      <section id="supply-card" class="card" data-testid="block-supply-card">
+        <h2>ETH Tokenomics</h2>
+        <div class="indicators">
+          <div class="indicator">
+            <span class="label">Cirkulerande Supply</span>
+            <span id="supply-circulating" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Total Supply</span>
+            <span id="supply-total" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Staking Ratio (est.)</span>
+            <span id="supply-staking-ratio" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Inflation vs Burn</span>
+            <span id="supply-net-issuance" class="value">–</span>
+          </div>
         </div>
-        <div class="indicator">
-          <span class="label">Total Supply</span>
-          <span id="supply-total" class="value">–</span>
-        </div>
-        <div class="indicator">
-          <span class="label">Staking Ratio (est.)</span>
-          <span id="supply-staking-ratio" class="value">–</span>
-        </div>
-        <div class="indicator">
-          <span class="label">Inflation vs Burn</span>
-          <span id="supply-net-issuance" class="value">–</span>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="staking-dashboard-card" class="card" data-testid="block-staking-dashboard-card">
-      <h2>ETH Staking Overview</h2>
-      <div class="indicators">
-        <div class="indicator">
-          <span class="label">Estimerat ETH Staked</span>
-          <span id="staking-total-eth" class="value">–</span>
+      <section id="staking-dashboard-card" class="card" data-testid="block-staking-dashboard-card">
+        <h2>ETH Staking Overview</h2>
+        <div class="indicators">
+          <div class="indicator">
+            <span class="label">Estimerat ETH Staked</span>
+            <span id="staking-total-eth" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Staking Ratio</span>
+            <span id="staking-ratio-pct" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Bästa Staking APY</span>
+            <span id="staking-best-apy" class="value">–</span>
+          </div>
+          <div class="indicator">
+            <span class="label">Nätverkssäkerhet</span>
+            <span id="staking-security" class="value">–</span>
+          </div>
         </div>
-        <div class="indicator">
-          <span class="label">Staking Ratio</span>
-          <span id="staking-ratio-pct" class="value">–</span>
-        </div>
-        <div class="indicator">
-          <span class="label">Bästa Staking APY</span>
-          <span id="staking-best-apy" class="value">–</span>
-        </div>
-        <div class="indicator">
-          <span class="label">Nätverkssäkerhet</span>
-          <span id="staking-security" class="value">–</span>
-        </div>
-      </div>
-      <p class="disclaimer" style="margin-top:12px">
-        Staking-data baseras på supply-differens och DefiLlama yields. Exakta siffror kan avvika.
-      </p>
-    </section>
+        <p class="disclaimer" style="margin-top:12px">
+          Staking-data baseras på supply-differens och DefiLlama yields. Exakta siffror kan avvika.
+        </p>
+      </section>
+    </div>
 
-    <section id="sentiment-card" class="card" data-testid="block-sentiment-card">
-      <h2>Marknadssentiment</h2>
-      <div class="sentiment-row">
-        <div id="sentiment-gauge" class="sentiment-gauge sentiment-loading">–</div>
-        <div class="sentiment-text">
-          <span id="sentiment-label" class="sentiment-label">Laddar…</span>
-          <p id="sentiment-desc" class="sentiment-desc">
-            Hämtar Crypto Fear &amp; Greed Index – ett sammanvägt mått (0–100) på hela
-            kryptomarknadens känsloläge baserat på volatilitet, volym, sociala medier,
-            dominans och trender.
-          </p>
+    <div class="card-grid-2">
+      <section id="sentiment-card" class="card" data-testid="block-sentiment-card">
+        <h2>Marknadssentiment</h2>
+        <div class="sentiment-row">
+          <div id="sentiment-gauge" class="sentiment-gauge sentiment-loading">–</div>
+          <div class="sentiment-text">
+            <span id="sentiment-label" class="sentiment-label">Laddar…</span>
+            <p id="sentiment-desc" class="sentiment-desc">
+              Hämtar Crypto Fear &amp; Greed Index – ett sammanvägt mått (0–100) på hela
+              kryptomarknadens känsloläge baserat på volatilitet, volym, sociala medier,
+              dominans och trender.
+            </p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="defi-card" class="card" data-testid="block-defi-card">
-      <h2>DeFi & Staking</h2>
-      <div class="defi-tvl-row">
-        <div>
-          <span class="label">Ethereums TVL (Total Value Locked)</span>
-          <span id="defi-tvl" class="price-small">–</span>
+      <section id="defi-card" class="card" data-testid="block-defi-card">
+        <h2>DeFi & Staking</h2>
+        <div class="defi-tvl-row">
+          <div>
+            <span class="label">Ethereums TVL (Total Value Locked)</span>
+            <span id="defi-tvl" class="price-small">–</span>
+          </div>
+          <div>
+            <span class="label">TVL-förändring 1 dag</span>
+            <span id="defi-tvl-change" class="price-small">–</span>
+          </div>
         </div>
-        <div>
-          <span class="label">TVL-förändring 1 dag</span>
-          <span id="defi-tvl-change" class="price-small">–</span>
-        </div>
-      </div>
-      <h3 class="ta-subtitle" style="margin-top:16px">Top 5 Staking-protokoll (APY)</h3>
-      <ul id="staking-list" class="staking-list">
-        <li class="staking-loading">Laddar staking-data…</li>
-      </ul>
-    </section>
+        <h3 class="ta-subtitle" style="margin-top:16px">Top 5 Staking-protokoll (APY)</h3>
+        <ul id="staking-list" class="staking-list">
+          <li class="staking-loading">Laddar staking-data…</li>
+        </ul>
+      </section>
+    </div>
 
-    <section id="l2-card" class="card" data-testid="block-l2-card">
-      <h2>Layer 2 Ekosystem</h2>
-      <div class="l2-total-row">
-        <span class="label">Total L2 TVL</span>
-        <span id="l2-total-tvl" class="price-small">–</span>
-      </div>
-      <div class="l2-bar-container">
-        <div class="l2-bar" id="l2-bar"></div>
-        <div class="l2-legend" id="l2-legend"></div>
-      </div>
-    </section>
+    <div class="card-grid-2">
+      <section id="l2-card" class="card" data-testid="block-l2-card">
+        <h2>Layer 2 Ekosystem</h2>
+        <div class="l2-total-row">
+          <span class="label">Total L2 TVL</span>
+          <span id="l2-total-tvl" class="price-small">–</span>
+        </div>
+        <div class="l2-bar-container">
+          <div class="l2-bar" id="l2-bar"></div>
+          <div class="l2-legend" id="l2-legend"></div>
+        </div>
+      </section>
 
-    <section id="gas-card" class="card" data-testid="block-gas-card">
-      <h2>Gas Tracker</h2>
-      <div class="gas-status-row">
-        <span class="label">Nätverksbelastning</span>
-        <span id="gas-load" class="gas-load gas-load-unknown">Laddar…</span>
-      </div>
-      <div class="gas-prices-row">
-        <div class="gas-tier">
-          <span class="label">Low</span>
-          <span id="gas-low" class="gas-value">–</span>
-          <span class="gas-unit">Gwei</span>
+      <section id="gas-card" class="card" data-testid="block-gas-card">
+        <h2>Gas Tracker</h2>
+        <div class="gas-status-row">
+          <span class="label">Nätverksbelastning</span>
+          <span id="gas-load" class="gas-load gas-load-unknown">Laddar…</span>
         </div>
-        <div class="gas-tier">
-          <span class="label">Average</span>
-          <span id="gas-avg" class="gas-value">–</span>
-          <span class="gas-unit">Gwei</span>
+        <div class="gas-prices-row">
+          <div class="gas-tier">
+            <span class="label">Low</span>
+            <span id="gas-low" class="gas-value">–</span>
+            <span class="gas-unit">Gwei</span>
+          </div>
+          <div class="gas-tier">
+            <span class="label">Average</span>
+            <span id="gas-avg" class="gas-value">–</span>
+            <span class="gas-unit">Gwei</span>
+          </div>
+          <div class="gas-tier">
+            <span class="label">High</span>
+            <span id="gas-high" class="gas-value">–</span>
+            <span class="gas-unit">Gwei</span>
+          </div>
         </div>
-        <div class="gas-tier">
-          <span class="label">High</span>
-          <span id="gas-high" class="gas-value">–</span>
-          <span class="gas-unit">Gwei</span>
+        <div class="gas-cost-row">
+          <span class="label">Estimerad kostnad för ETH-överföring (21 000 gas)</span>
+          <span id="gas-transfer-cost" class="price-small">–</span>
         </div>
-      </div>
-      <div class="gas-cost-row">
-        <span class="label">Estimerad kostnad för ETH-överföring (21 000 gas)</span>
-        <span id="gas-transfer-cost" class="price-small">–</span>
-      </div>
-    </section>
+      </section>
+    </div>
 
     <section id="correlation-card" class="card" data-testid="block-correlation-card">
       <h2>ETH vs Marknaden</h2>

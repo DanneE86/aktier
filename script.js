@@ -153,7 +153,7 @@ const fmtLarge = (n) => {
 };
 
 // API-bas: fungerar även om sidan öppnas via file://
-const API_BASE = (location.protocol === "file:" || location.port === "")
+const API_BASE = (location.protocol === "file:")
   ? "http://localhost:3000"
   : "";
 

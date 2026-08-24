@@ -351,8 +351,13 @@ const LONG_TERM_PICKS = [
 ];
 
 // ── Scanner backend URL ───────────────────────────────────────────
-
-const SCANNER_API = "http://localhost:3000/api";
+// "http://localhost:3000" ar bara en fallback for lokal utveckling nar
+// sidan oppnas direkt via file:// -- annars skulle produktionsanvandares
+// webblasare forsoka prata med sin EGEN dator istallet for Railway-servern.
+const API_BASE = (location.protocol === "file:")
+  ? "http://localhost:3000"
+  : "";
+const SCANNER_API = API_BASE + "/api";
 
 // ── Applikationstillstand ──────────────────────────────────────────
 
