@@ -86,7 +86,9 @@ function applyKillFilters(stock) {
   const reasons = [];
   if (stock.price < CONFIG.minPrice) reasons.push(`Price below $${CONFIG.minPrice}`);
   if (stock.price > CONFIG.maxPrice) reasons.push(`Price above $${CONFIG.maxPrice}`);
-  if (stock.name && /warrant|right|unit|%|etf|fund/i.test(stock.name)) reasons.push("Not common stock");
+  // Ordgränser: "United", "Community", "Bright", "Unity" är vanliga bolag och ska inte dödas.
+  // Yahoo trunkerar namn ("...Income Fun"), därför fångas även "Fun" i slutet.
+  if (stock.name && (/%|\b(warrants?|rights?|units?|etf|etn|fund)\b|\bfun$/i.test(stock.name.trim()))) reasons.push("Not common stock");
   if (stock.ticker && stock.ticker.length > 5) reasons.push("Likely warrant/unit ticker");
   return reasons;
 }
@@ -104,6 +106,10 @@ function calculateRiskScore(stock) {
     score += 1; flags.push("Extreme daily move (>30%)");
   }
 
+  if (stock.changePct && stock.changePct < -15) {
+    score += 1; flags.push("Falling knife (fall >15%)");
+  }
+
   if (stock.marketCap && stock.marketCap > 0 && stock.marketCap < 50e6) {
     score += 1; flags.push("Micro-cap (<$50M)");
   }
@@ -113,19 +119,29 @@ function calculateRiskScore(stock) {
 
 function calculateConfidence(hit) {
   let score = 30;
-  const absPct = Math.abs(hit.changePct || 0);
-  if (absPct > 20) score += 25;
-  else if (absPct > 10) score += 15;
-  else if (absPct > 5) score += 8;
+  // Bara uppgång belönas. Tidigare gav abs() ett ras på -40% samma poäng som +40%,
+  // så fallande aktier hamnade i topp.
+  const pct = hit.changePct || 0;
+  if (pct > 20) score += 25;
+  else if (pct > 10) score += 15;
+  else if (pct > 5) score += 8;
+  else if (pct < -10) score -= 15;
 
-  if (hit.volume > 10e6) score += 15;
-  else if (hit.volume > 5e6) score += 10;
-  else if (hit.volume > 1e6) score += 5;
+  // Relativ volym är bättre än absolut volym (absolut gynnar aktier med enorma aktieantal).
+  const rvol = hit.relativeVolume || (hit.avgVolume > 0 ? hit.volume / hit.avgVolume : 0);
+  if (rvol >= 5) score += 15;
+  else if (rvol >= 3) score += 10;
+  else if (rvol >= 2) score += 5;
+  else if (!rvol) {
+    if (hit.volume > 10e6) score += 15;
+    else if (hit.volume > 5e6) score += 10;
+    else if (hit.volume > 1e6) score += 5;
+  }
 
   if (hit.price >= 1 && hit.price <= 5) score += 5;
   if (hit.scannerType === "catalyst") score += 15;
   if (hit.scannerType === "momentum") score += 5;
-  return Math.min(score, 100);
+  return Math.max(0, Math.min(score, 100));
 }
 
 function getPriceTier(price) {
@@ -979,4 +995,4 @@ if (process.argv.includes("--premarket")) {
   runPreMarketScanStandalone().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
 }
 
-module.exports = { runFullScan, runPreMarketScanStandalone, CONFIG };
+module.exports = { runFullScan, runPreMarketScanStandalone, CONFIG, applyKillFilters, calculateRiskScore, calculateConfidence };
